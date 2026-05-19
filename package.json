@@ -1,0 +1,52 @@
+{
+  "name": "treemap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant tree documentation on real and georeferenced maps.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/server/db/migrate.ts",
+    "db:seed": "tsx src/server/db/seed.ts",
+    "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "@trpc/client": "^11.0.0-rc.660",
+    "@trpc/react-query": "^11.0.0-rc.660",
+    "@trpc/server": "^11.0.0-rc.660",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.36.4",
+    "maplibre-gl": "^4.7.1",
+    "next": "^15.1.0",
+    "pg": "^8.13.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "superjson": "^2.2.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.28.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

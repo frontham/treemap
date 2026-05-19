@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html,
+  body {
+    @apply bg-paper text-ink;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply font-sans text-base antialiased;
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(224 83 11 / 0.30);
+    border-radius: 6px;
+  }
+}
+
+@layer utilities {
+  .hairline {
+    @apply border border-hairline;
+  }
+  .mono-num {
+    @apply font-mono tabular-nums;
+  }
+}
