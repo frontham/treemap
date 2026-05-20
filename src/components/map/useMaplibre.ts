@@ -42,7 +42,7 @@ export function useMaplibre({ ref, initialCenter, initialZoom }: Args) {
     const handleMouseMove = (e: MapMouseEvent) => {
       setCursor({ lng: e.lngLat.lng, lat: e.lngLat.lat });
     };
-    const handleError = (e: maplibregl.ErrorEvent) => {
+    const handleError = (e: { error?: { message?: string } }) => {
       setError(e.error?.message ?? 'Map error');
       // eslint-disable-next-line no-console
       console.error('[map]', e);
