@@ -13,6 +13,7 @@ import { TreeCustomFieldsList } from './TreeCustomFieldsList';
 import { TreePhotosStrip } from './TreePhotosStrip';
 import { TreeDetailActions } from './TreeDetailActions';
 import { TreeDetailSkeleton } from './TreeDetailSkeleton';
+import { useRole } from '@/components/auth/useRole';
 
 /**
  * Drawer that shows the selected tree. Two internal modes:
@@ -23,6 +24,8 @@ import { TreeDetailSkeleton } from './TreeDetailSkeleton';
 export function TreeDetailDrawer() {
   const { selectedId, select } = useSelection();
   const [editing, setEditing] = useState(false);
+  const { can } = useRole();
+  const canEdit = can('editor');
 
   const utils = trpc.useUtils();
 
@@ -94,10 +97,9 @@ export function TreeDetailDrawer() {
           <TreeAttributesGrid tree={tree} />
           <TreeCustomFieldsList values={tree.customFields} />
           <TreePhotosStrip photos={tree.photos} />
-          <TreeDetailActions
-            onEdit={() => setEditing(true)}
-            onDelete={handleDelete}
-          />
+          {canEdit ? (
+            <TreeDetailActions onEdit={() => setEditing(true)} onDelete={handleDelete} />
+          ) : null}
         </div>
       )}
     </Drawer>

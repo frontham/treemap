@@ -5,6 +5,7 @@ import type { MapLayerMouseEvent } from 'maplibre-gl';
 import { useMap } from './MapContext';
 import { useSelection } from './SelectionContext';
 import { useCompose } from './ComposeContext';
+import { useAlign } from './AlignContext';
 import { TREES_PIN_LAYER } from './treeLayer';
 
 /**
@@ -17,9 +18,10 @@ export function TreeSelectHandler() {
   const { map } = useMap();
   const { select } = useSelection();
   const { mode } = useCompose();
+  const { aligning } = useAlign();
 
   useEffect(() => {
-    if (!map || mode !== 'idle') return;
+    if (!map || mode !== 'idle' || aligning) return;
 
     const onClick = (e: MapLayerMouseEvent) => {
       const feature = e.features?.[0];
@@ -44,7 +46,7 @@ export function TreeSelectHandler() {
       map.off('mouseenter', TREES_PIN_LAYER, enter);
       map.off('mouseleave', TREES_PIN_LAYER, leave);
     };
-  }, [map, mode, select]);
+  }, [map, mode, aligning, select]);
 
   return null;
 }

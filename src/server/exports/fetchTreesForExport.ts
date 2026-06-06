@@ -32,6 +32,7 @@ export async function fetchTreesForExport(ctx: OrgContext): Promise<ExportTreeRo
              ST_Y(location::geometry) AS lat
       FROM trees
       WHERE deleted_at IS NULL
+        AND (current_project_id() IS NULL OR project_id = current_project_id())
       ORDER BY created_at DESC
     `);
     return result.rows as ExportTreeRow[];

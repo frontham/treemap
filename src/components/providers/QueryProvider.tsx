@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import superjson from 'superjson';
 import { trpc } from '@/lib/trpc/client';
+import { GlobalActivityBar } from './GlobalActivityBar';
 
 /**
  * Single provider that wires the React Query client + the tRPC React client.
@@ -25,7 +26,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <GlobalActivityBar />
+        {children}
+      </QueryClientProvider>
     </trpc.Provider>
   );
 }

@@ -1,6 +1,7 @@
 import { pgTable, uuid, text, integer, timestamp, index } from 'drizzle-orm/pg-core';
 import { trees } from './trees';
 import { organizations } from './orgs';
+import { projects } from './projects';
 import { users } from './users';
 
 export const treePhotos = pgTable(
@@ -13,6 +14,7 @@ export const treePhotos = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     storageKey: text('storage_key').notNull(),
     thumbnailKey: text('thumbnail_key'),
     mimeType: text('mime_type').notNull(),
@@ -26,6 +28,7 @@ export const treePhotos = pgTable(
   },
   (t) => ({
     treeIdx: index('tree_photos_tree_idx').on(t.treeId),
+    projectIdx: index('tree_photos_project_idx').on(t.projectId),
   }),
 );
 
