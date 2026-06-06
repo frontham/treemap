@@ -2,12 +2,14 @@ import { z } from 'zod';
 import { sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router } from '../init';
-import { orgProcedure } from '../orgProcedure';
+import { projectProcedure } from '../projectProcedure';
+import { requireRole } from '../requireRole';
 import type { TreeView } from '@/components/trees/TreeView';
 import { insertTreeRow } from '@/server/imports/insertTreeRow';
 import { geoJsonFeatureToTree } from '@/server/imports/geoJsonFeatureToTree';
 import { csvRowToTree } from '@/server/imports/csvRowToTree';
 import { parseCsv } from '@/server/imports/parseCsv';
+import { applyRigid } from '@/lib/geo/rigidTransform';
 
 const PlacedViaEnum = z.enum([
   'map_click',
@@ -83,14 +85,30 @@ function formatDateOnly(value: string | Date | null): string | undefined {
   return value.slice(0, 10);
 }
 
+/** Mutations require at least editor on the active project. */
+const editorProcedure = projectProcedure.use(requireRole('editor'));
+
+/** Bulk re-georeference is an admin-level operation (moves every tree). */
+const adminProcedure = projectProcedure.use(requireRole('admin'));
+
+const CalibrateInput = z.object({
+  dx: z.number(), // metres east(+)/west(−)
+  dy: z.number(), // metres north(+)/south(−)
+  angleDeg: z.number(), // counter-clockwise degrees
+  scale: z.number().positive().default(1), // 1 = unchanged
+  pivotLng: z.number(),
+  pivotLat: z.number(),
+});
+
 export const treesRouter = router({
-  list: orgProcedure.query(async ({ ctx }) => {
+  list: projectProcedure.query(async ({ ctx }) => {
     const result = await ctx.tx.execute(sql`
       SELECT id, common_name, scientific_name, health,
              ST_X(location::geometry) AS lng,
              ST_Y(location::geometry) AS lat
       FROM trees
       WHERE deleted_at IS NULL
+        AND (current_project_id() IS NULL OR project_id = current_project_id())
       ORDER BY created_at DESC
     `);
     const rows = result.rows as TreeListRow[];
@@ -112,7 +130,7 @@ export const treesRouter = router({
     };
   }),
 
-  get: orgProcedure
+  get: projectProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }): Promise<TreeView> => {
       const result = await ctx.tx.execute(sql`
@@ -123,6 +141,7 @@ export const treesRouter = router({
                ST_Y(location::geometry) AS lat
         FROM trees
         WHERE id = ${input.id} AND deleted_at IS NULL
+          AND (current_project_id() IS NULL OR project_id = current_project_id())
       `);
       const row = result.rows[0] as TreeDetailRow | undefined;
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
@@ -144,7 +163,39 @@ export const treesRouter = router({
       };
     }),
 
-  update: orgProcedure.input(UpdateTreeInput).mutation(async ({ ctx, input }) => {
+  /**
+   * Manually re-georeference the whole project: translate (metres) + rotate
+   * (about a pivot) every non-deleted tree. Uses the same applyRigid math as the
+   * client preview so the saved result matches exactly what was shown on the map.
+   * Each row update is logged to tree_revisions by the audit trigger (reversible).
+   */
+  calibrate: adminProcedure.input(CalibrateInput).mutation(async ({ ctx, input }) => {
+    const result = await ctx.tx.execute(sql`
+      SELECT id, ST_X(location::geometry) AS lng, ST_Y(location::geometry) AS lat
+      FROM trees
+      WHERE deleted_at IS NULL
+        AND (current_project_id() IS NULL OR project_id = current_project_id())
+    `);
+    const rows = result.rows as { id: string; lng: number; lat: number }[];
+    const payload = rows.map((r) => {
+      const [lng, lat] = applyRigid(Number(r.lng), Number(r.lat), input);
+      return { id: r.id, lng, lat };
+    });
+    if (payload.length === 0) return { updated: 0 };
+    // json_to_recordset binds reliably through Drizzle (array params via unnest do not).
+    const json = JSON.stringify(payload);
+    const upd = await ctx.tx.execute(sql`
+      UPDATE trees t SET
+        location   = ST_SetSRID(ST_MakePoint(d.lng, d.lat), 4326)::geography,
+        updated_by = current_user_id(),
+        updated_at = now()
+      FROM json_to_recordset(${json}::json) AS d(id uuid, lng float8, lat float8)
+      WHERE t.id = d.id
+    `);
+    return { updated: upd.rowCount ?? payload.length };
+  }),
+
+  update: editorProcedure.input(UpdateTreeInput).mutation(async ({ ctx, input }) => {
     const result = await ctx.tx.execute(sql`
       UPDATE trees SET
         common_name           = ${input.commonName ?? null},
@@ -168,7 +219,7 @@ export const treesRouter = router({
     return { id: row.id };
   }),
 
-  delete: orgProcedure
+  delete: editorProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.tx.execute(sql`
@@ -179,7 +230,7 @@ export const treesRouter = router({
       return { ok: true };
     }),
 
-  importGeoJson: orgProcedure
+  importGeoJson: editorProcedure
     .input(z.object({ features: z.array(z.unknown()) }))
     .mutation(async ({ ctx, input }) => {
       let imported = 0;
@@ -196,7 +247,7 @@ export const treesRouter = router({
       return { imported, skipped };
     }),
 
-  importCsv: orgProcedure
+  importCsv: editorProcedure
     .input(z.object({ csv: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const rows = parseCsv(input.csv);
@@ -214,15 +265,16 @@ export const treesRouter = router({
       return { imported, skipped, totalRows: rows.length };
     }),
 
-  create: orgProcedure.input(CreateTreeInput).mutation(async ({ ctx, input }) => {
+  create: editorProcedure.input(CreateTreeInput).mutation(async ({ ctx, input }) => {
     const result = await ctx.tx.execute(sql`
       INSERT INTO trees (
-        org_id, location, location_accuracy_m, placed_via,
+        org_id, project_id, location, location_accuracy_m, placed_via,
         common_name, scientific_name, health, condition,
         dbh_cm, height_m, canopy_radius_m, estimated_age_years,
         planted_date, notes, custom_fields, created_by, updated_by
       ) VALUES (
         current_org_id(),
+        current_project_id(),
         ST_SetSRID(ST_MakePoint(${input.location.lng}, ${input.location.lat}), 4326)::geography,
         ${input.locationAccuracyM ?? null},
         ${input.placedVia},

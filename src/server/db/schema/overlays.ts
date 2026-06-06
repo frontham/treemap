@@ -9,6 +9,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { organizations } from './orgs';
+import { projects } from './projects';
 import { users } from './users';
 import type { LngLat } from './columns/geographyPoint';
 
@@ -22,6 +23,7 @@ export const overlays = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     storageKey: text('storage_key').notNull(),
     opacityDefault: real('opacity_default').notNull().default(0.7),
@@ -32,6 +34,7 @@ export const overlays = pgTable(
   },
   (t) => ({
     orgIdx: index('overlays_org_idx').on(t.orgId),
+    projectIdx: index('overlays_project_idx').on(t.projectId),
   }),
 );
 

@@ -25,13 +25,14 @@ export type ImportTreeValues = {
 export async function insertTreeRow(tx: Tx, v: ImportTreeValues): Promise<void> {
   await tx.execute(sql`
     INSERT INTO trees (
-      org_id, location, placed_via,
+      org_id, project_id, location, placed_via,
       common_name, scientific_name, health, condition,
       dbh_cm, height_m, canopy_radius_m, estimated_age_years,
       planted_date, notes, custom_fields,
       created_by, updated_by
     ) VALUES (
       current_org_id(),
+      current_project_id(),
       ST_SetSRID(ST_MakePoint(${v.lng}, ${v.lat}), 4326)::geography,
       'import',
       ${v.commonName ?? null},

@@ -6,6 +6,7 @@ import { MapContext, type Cursor } from './MapContext';
 import { SelectionProvider } from './SelectionContext';
 import { ComposeProvider } from './ComposeContext';
 import { LayersProvider } from './LayersContext';
+import { AlignProvider } from './AlignContext';
 import { useMaplibre } from './useMaplibre';
 import { MapErrorOverlay } from './MapErrorOverlay';
 
@@ -32,11 +33,13 @@ export function MapShell({ initialCenter, initialZoom, children }: Props) {
       <SelectionProvider>
         <ComposeProvider>
           <LayersProvider>
-            <main className="relative h-screen w-screen overflow-hidden bg-paper">
-              <div ref={containerRef} className="h-full w-full" />
-              {error ? <MapErrorOverlay message={error} /> : null}
-              {children}
-            </main>
+            <AlignProvider>
+              <main className="relative h-screen w-screen overflow-hidden bg-paper">
+                <div ref={containerRef} className="h-full w-full" />
+                {error ? <MapErrorOverlay message={error} /> : null}
+                {children}
+              </main>
+            </AlignProvider>
           </LayersProvider>
         </ComposeProvider>
       </SelectionProvider>

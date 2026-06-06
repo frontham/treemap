@@ -9,6 +9,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { organizations } from './orgs';
+import { projects } from './projects';
 import { customFieldTypeEnum } from './enums';
 
 export const customFieldDefs = pgTable(
@@ -18,6 +19,7 @@ export const customFieldDefs = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     key: text('key').notNull(),
     label: text('label').notNull(),
     type: customFieldTypeEnum('type').notNull(),
@@ -28,7 +30,7 @@ export const customFieldDefs = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    orgKeyIdx: uniqueIndex('custom_field_defs_org_key_idx').on(t.orgId, t.key),
+    projectKeyIdx: uniqueIndex('custom_field_defs_project_key_idx').on(t.projectId, t.key),
   }),
 );
 

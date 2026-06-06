@@ -18,4 +18,12 @@ playwright-report/
 test-results/
 
 .tsbuildinfo
+*.tsbuildinfo
 next-env.d.ts
+
+# Local scratch — one-off diagnostic / alignment scripts, caches, and screenshots
+/_*
+
+# Large GIS source data and GeoVisia project exports (not versioned)
+/data/
+*.gvsx

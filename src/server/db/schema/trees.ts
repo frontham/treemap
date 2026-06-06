@@ -10,6 +10,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { organizations } from './orgs';
+import { projects } from './projects';
 import { users } from './users';
 import { species } from './species';
 import { treeHealthEnum, treeConditionEnum, placedViaEnum } from './enums';
@@ -22,6 +23,7 @@ export const trees = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     location: geographyPoint('location').notNull(),
     locationAccuracyM: real('location_accuracy_m'),
     placedVia: placedViaEnum('placed_via').notNull(),
@@ -48,6 +50,7 @@ export const trees = pgTable(
   },
   (t) => ({
     orgIdx: index('trees_org_idx').on(t.orgId),
+    projectIdx: index('trees_project_idx').on(t.projectId),
     // GIST spatial index on location is added in 0002_indexes_and_rls.sql
   }),
 );

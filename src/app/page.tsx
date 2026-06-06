@@ -1,18 +1,12 @@
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE } from '@/server/auth/cookies';
 
-export default function Home() {
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-paper text-ink">
-      <div className="text-center space-y-4">
-        <h1 className="text-xl font-medium tracking-tight">TreeMap</h1>
-        <p className="text-muted">Document trees on the map.</p>
-        <Link
-          href="/orgs/demo/map"
-          className="inline-block text-accent hover:underline"
-        >
-          Open demo map →
-        </Link>
-      </div>
-    </main>
-  );
+/**
+ * Root entry: send signed-in users to their projects, everyone else to login.
+ * (Real session verification happens downstream; this only checks presence.)
+ */
+export default async function Home() {
+  const jar = await cookies();
+  redirect(jar.get(SESSION_COOKIE) ? '/orgs/demo' : '/login');
 }

@@ -2,13 +2,17 @@ import { z } from 'zod';
 import { sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router } from '../init';
-import { orgProcedure } from '../orgProcedure';
+import { projectProcedure } from '../projectProcedure';
+import { requireRole } from '../requireRole';
 
 const Corner = z.object({ lng: z.number(), lat: z.number() });
 
 const CreateOverlayInput = z.object({
   name: z.string().min(1),
-  storageKey: z.string().url(),
+  // An http(s) URL or a (downscaled) data: URL for images saved from the
+  // reference-image tool. Stored verbatim in storage_key and used as the
+  // MapLibre image-source URL.
+  storageKey: z.string().min(1),
   corners: z.array(Corner).length(4),
   opacityDefault: z.number().min(0).max(1).default(0.7),
 });
@@ -31,11 +35,14 @@ type OverlayRow = {
   opacity_default: number;
 };
 
+const editorProcedure = projectProcedure.use(requireRole('editor'));
+
 export const overlaysRouter = router({
-  list: orgProcedure.query(async ({ ctx }): Promise<OverlayView[]> => {
+  list: projectProcedure.query(async ({ ctx }): Promise<OverlayView[]> => {
     const result = await ctx.tx.execute(sql`
       SELECT id, name, storage_key, corners, opacity_default
       FROM overlays
+      WHERE (current_project_id() IS NULL OR project_id = current_project_id())
       ORDER BY z_index, created_at DESC
     `);
     const rows = result.rows as OverlayRow[];
@@ -48,13 +55,14 @@ export const overlaysRouter = router({
     }));
   }),
 
-  create: orgProcedure
+  create: editorProcedure
     .input(CreateOverlayInput)
     .mutation(async ({ ctx, input }) => {
       const result = await ctx.tx.execute(sql`
-        INSERT INTO overlays (org_id, name, storage_key, corners, opacity_default, created_by)
+        INSERT INTO overlays (org_id, project_id, name, storage_key, corners, opacity_default, created_by)
         VALUES (
           current_org_id(),
+          current_project_id(),
           ${input.name},
           ${input.storageKey},
           ${JSON.stringify(input.corners)}::jsonb,
@@ -68,7 +76,7 @@ export const overlaysRouter = router({
       return { id: row.id };
     }),
 
-  delete: orgProcedure
+  delete: editorProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.tx.execute(sql`DELETE FROM overlays WHERE id = ${input.id}`);

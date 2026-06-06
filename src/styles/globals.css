@@ -34,3 +34,16 @@
     @apply font-mono tabular-nums;
   }
 }
+
+/* Indeterminate progress sweep for the global activity bar. */
+@keyframes tm-progress {
+  0% {
+    transform: translateX(-100%) scaleX(0.35);
+  }
+  50% {
+    transform: translateX(20%) scaleX(0.5);
+  }
+  100% {
+    transform: translateX(110%) scaleX(0.35);
+  }
+}

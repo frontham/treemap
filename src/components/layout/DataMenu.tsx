@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { ChevronDownIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { trpc } from '@/lib/trpc/client';
+import { useRole } from '@/components/auth/useRole';
 
 /**
  * Dropdown in the top bar for data actions.
@@ -17,6 +18,8 @@ export function DataMenu() {
   const geojsonInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
+  const { can } = useRole();
+  const canImport = can('editor');
   const utils = trpc.useUtils();
   const importGeoJson = trpc.trees.importGeoJson.useMutation({
     onSuccess: (r) => {
@@ -84,13 +87,17 @@ export function DataMenu() {
           <MenuLink href="/api/exports/trees.csv" download>
             Export as CSV
           </MenuLink>
-          <div className="h-px bg-hairline" />
-          <MenuButton onClick={() => geojsonInputRef.current?.click()}>
-            Import GeoJSON…
-          </MenuButton>
-          <MenuButton onClick={() => csvInputRef.current?.click()}>
-            Import CSV…
-          </MenuButton>
+          {canImport ? (
+            <>
+              <div className="h-px bg-hairline" />
+              <MenuButton onClick={() => geojsonInputRef.current?.click()}>
+                Import GeoJSON…
+              </MenuButton>
+              <MenuButton onClick={() => csvInputRef.current?.click()}>
+                Import CSV…
+              </MenuButton>
+            </>
+          ) : null}
         </div>
       ) : null}
 
