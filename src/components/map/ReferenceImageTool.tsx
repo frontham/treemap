@@ -48,6 +48,44 @@ function corners(st: State): LngLatCorners {
   }) as LngLatCorners;
 }
 
+/**
+ * Inverse of `corners()`: rebuild an editable State from a saved overlay's four
+ * lng/lat corners ([TL, TR, BR, BL]) so a stored overlay can be moved/resized
+ * exactly like a freshly dropped image. baseHalf*m carry the on-map dimensions
+ * with scale reset to 1, so the resize handle keeps the stored aspect ratio.
+ */
+type LatLng = { lng: number; lat: number };
+function stateFromCorners(cs: readonly [LatLng, LatLng, LatLng, LatLng]): State {
+  const [tl, tr, br, bl] = cs;
+  const centerLng = (tl.lng + br.lng) / 2;
+  const centerLat = (tl.lat + br.lat) / 2;
+  const mLng = M_PER_DEG_LAT * Math.cos((centerLat * Math.PI) / 180);
+  const toM = (p: { lng: number; lat: number }): Pt => [
+    (p.lng - centerLng) * mLng,
+    (p.lat - centerLat) * M_PER_DEG_LAT,
+  ];
+  const tlM = toM(tl);
+  const trM = toM(tr);
+  const blM = toM(bl);
+  const widthAxis: Pt = [trM[0] - tlM[0], trM[1] - tlM[1]]; // R(rot)·(2·halfW, 0)
+  const heightAxis: Pt = [tlM[0] - blM[0], tlM[1] - blM[1]]; // R(rot)·(0, 2·halfH)
+  const baseHalfWm = Math.max(1, Math.hypot(widthAxis[0], widthAxis[1]) / 2);
+  const baseHalfHm = Math.max(1, Math.hypot(heightAxis[0], heightAxis[1]) / 2);
+  const rotDeg = (Math.atan2(widthAxis[1], widthAxis[0]) * 180) / Math.PI;
+  return { center: [centerLng, centerLat], scale: 1, rotDeg, baseHalfWm, baseHalfHm };
+}
+
+/** Rotate-handle position: 25% beyond the top-edge midpoint, along the image's up-axis (so it tracks rotation + size). */
+function rotateHandlePos(st: State): Pt {
+  const cs = corners(st);
+  const topMidLng = (cs[0][0] + cs[1][0]) / 2;
+  const topMidLat = (cs[0][1] + cs[1][1]) / 2;
+  return [
+    st.center[0] + (topMidLng - st.center[0]) * 1.25,
+    st.center[1] + (topMidLat - st.center[1]) * 1.25,
+  ];
+}
+
 function dot(color: string, cursor: string): HTMLDivElement {
   const el = document.createElement('div');
   el.style.cssText = `width:15px;height:15px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);cursor:${cursor}`;
@@ -78,7 +116,8 @@ function fitFC(pairs: Pair[], pending: Pt | null) {
 
 /**
  * Reference-image overlay (from the Tools menu). Two modes:
- *   - Move/resize: drag the blue dot to move, green dot to resize+rotate.
+ *   - Move/resize: blue dot moves, green dot resizes (rotation locked),
+ *     purple dot above the top edge rotates.
  *   - Fit by points: click a feature on the image, then its real spot on the
  *     map (a from→to pair); after 2+, Fit solves a similarity (solveSimilarity)
  *     and snaps the image onto the map.
@@ -87,8 +126,9 @@ function fitFC(pairs: Pair[], pending: Pt | null) {
 export function ReferenceImageTool() {
   const { map } = useMap();
   const { can } = useRole();
-  const { tool, setTool, setCapturingPoints } = useAlign();
+  const { tool, setTool, setCapturingPoints, editingOverlay } = useAlign();
   const open = tool === 'reference';
+  const editId = editingOverlay?.id ?? null;
   const utils = trpc.useUtils();
 
   const [hasImage, setHasImage] = useState(false);
@@ -99,25 +139,30 @@ export function ReferenceImageTool() {
   const st = useRef<State | null>(null);
   const centerMk = useRef<Marker | null>(null);
   const trMk = useRef<Marker | null>(null);
+  const rotMk = useRef<Marker | null>(null);
   const urlRef = useRef<string | null>(null);
   const saveUrlRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pairsRef = useRef<Pair[]>([]);
   const pendingRef = useRef<Pt | null>(null);
+  const loadedEditId = useRef<string | null>(null);
 
-  const redraw = (skip?: 'center' | 'tr') => {
+  const redraw = (skip?: 'center' | 'tr' | 'rot') => {
     if (!map || !st.current) return;
     const cs = corners(st.current);
     (map.getSource(SRC) as ImageSource | undefined)?.setCoordinates(cs);
     if (skip !== 'center') centerMk.current?.setLngLat(st.current.center);
     if (skip !== 'tr') trMk.current?.setLngLat(cs[1]);
+    if (skip !== 'rot') rotMk.current?.setLngLat(rotateHandlePos(st.current));
   };
 
   const removeMarkers = () => {
     centerMk.current?.remove();
     trMk.current?.remove();
+    rotMk.current?.remove();
     centerMk.current = null;
     trMk.current = null;
+    rotMk.current = null;
   };
 
   const updateFitSource = () => {
@@ -156,6 +201,39 @@ export function ReferenceImageTool() {
     if (map?.getLayer(LYR)) map.setPaintProperty(LYR, 'raster-opacity', opacity);
   }, [map, opacity, hasImage]);
 
+  // Seed the tool from a saved overlay when entering edit mode (from the Layers
+  // panel). Rebuilds the editable image + transform state from the stored
+  // corners so it behaves exactly like a freshly dropped reference image.
+  useEffect(() => {
+    if (!map || !open) return;
+    if (!editingOverlay) {
+      loadedEditId.current = null;
+      return;
+    }
+    if (loadedEditId.current === editingOverlay.id) return;
+    loadedEditId.current = editingOverlay.id;
+
+    clearImage(); // drop any prior transient image first
+    const seeded = stateFromCorners(editingOverlay.corners);
+    st.current = seeded;
+    saveUrlRef.current = editingOverlay.url; // reused on Update unless Replace picks a new file
+    urlRef.current = null; // not an object URL we own — don't revoke it
+    setOpacity(editingOverlay.opacityDefault);
+    map.addSource(SRC, { type: 'image', url: editingOverlay.url, coordinates: corners(seeded) });
+    const before = map.getLayer(TREES_CLUSTER_LAYER) ? TREES_CLUSTER_LAYER : undefined;
+    map.addLayer(
+      {
+        id: LYR,
+        type: 'raster',
+        source: SRC,
+        paint: { 'raster-opacity': editingOverlay.opacityDefault, 'raster-fade-duration': 0 },
+      },
+      before,
+    );
+    setHasImage(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, open, editingOverlay]);
+
   // Move/resize handles — only in transform mode while the panel is open.
   useEffect(() => {
     if (!map) return;
@@ -171,6 +249,8 @@ export function ReferenceImageTool() {
         st.current.center = [ll.lng, ll.lat];
         redraw('center');
       });
+      // Green corner: resize only (uniform scale, rotation locked). The handle
+      // stays glued to the corner, so dragging just grows/shrinks the box.
       const tm = new Marker({ element: dot('#16a34a', 'nwse-resize'), draggable: true, anchor: 'center' })
         .setLngLat(cs[1])
         .addTo(map);
@@ -184,13 +264,27 @@ export function ReferenceImageTool() {
           0.02,
           Math.hypot(px, py) / Math.hypot(st.current.baseHalfWm, st.current.baseHalfHm),
         );
-        st.current.rotDeg =
-          ((Math.atan2(py, px) - Math.atan2(st.current.baseHalfHm, st.current.baseHalfWm)) * 180) /
-          Math.PI;
-        redraw('tr');
+        redraw();
       });
+
+      // Purple handle above the top edge: rotate only (scale kept). Aligns the
+      // image's up-axis to the pointer, like grabbing a clock hand.
+      const rm = new Marker({ element: dot('#9333ea', 'grab'), draggable: true, anchor: 'center' })
+        .setLngLat(rotateHandlePos(st.current))
+        .addTo(map);
+      rm.on('drag', () => {
+        if (!st.current) return;
+        const ll = rm.getLngLat();
+        const mLng = M_PER_DEG_LAT * Math.cos((st.current.center[1] * Math.PI) / 180);
+        const px = (ll.lng - st.current.center[0]) * mLng;
+        const py = (ll.lat - st.current.center[1]) * M_PER_DEG_LAT;
+        st.current.rotDeg = (Math.atan2(py, px) * 180) / Math.PI - 90;
+        redraw();
+      });
+
       centerMk.current = cm;
       trMk.current = tm;
+      rotMk.current = rm;
     }
     return removeMarkers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -309,13 +403,43 @@ export function ReferenceImageTool() {
     });
   };
 
+  const updateOverlay = trpc.overlays.update.useMutation({
+    onSuccess: () => {
+      utils.overlays.list.invalidate();
+      clearImage();
+      setTool('none'); // closes the panel + clears editingOverlay → loader redraws at new corners
+    },
+    onError: (e) => window.alert(`Update failed: ${e.message}`),
+  });
+  const doUpdate = () => {
+    if (!st.current || !editId) return;
+    // Only resend the (potentially large) image when it was actually replaced.
+    const replaced = !!saveUrlRef.current && saveUrlRef.current !== editingOverlay?.url;
+    updateOverlay.mutate({
+      id: editId,
+      storageKey: replaced ? saveUrlRef.current ?? undefined : undefined,
+      corners: corners(st.current).map(([lng, lat]) => ({ lng, lat })),
+      opacityDefault: opacity,
+    });
+  };
+  const cancelEdit = () => {
+    clearImage();
+    setTool('none'); // clears editingOverlay → loader restores the original overlay unchanged
+  };
+  const closePanel = () => {
+    if (editId) clearImage(); // editing: discard the editable copy so no duplicate lingers
+    setTool('none');
+  };
+
   if (!can('editor') || !open) return null;
 
   return (
     <div className="absolute bottom-4 left-4 z-30 w-72 rounded-lg bg-panel/95 p-3 text-ink shadow-floating hairline backdrop-blur-md">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium">Reference image</span>
-        <button onClick={() => setTool('none')} className="text-muted hover:text-ink" aria-label="close (keeps the image on the map)">
+        <span className="truncate pr-2 text-sm font-medium">
+          {editId ? `Edit: ${editingOverlay?.name}` : 'Reference image'}
+        </span>
+        <button onClick={closePanel} className="shrink-0 text-muted hover:text-ink" aria-label="Close">
           ✕
         </button>
       </div>
@@ -380,20 +504,35 @@ export function ReferenceImageTool() {
           {subMode === 'transform' ? (
             <>
               <p className="mb-2 text-xs text-muted">
-                Drag the <span className="font-medium text-[#2563eb]">blue</span> dot to move, the{' '}
-                <span className="font-medium text-[#16a34a]">green</span> dot to resize/rotate.
+                Drag <span className="font-medium text-[#2563eb]">blue</span> to move,{' '}
+                <span className="font-medium text-[#16a34a]">green</span> to resize,{' '}
+                <span className="font-medium text-[#9333ea]">purple</span> to rotate.
               </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" onClick={doSave} disabled={saveOverlay.isPending}>
-                  {saveOverlay.isPending ? 'Saving…' : 'Save overlay'}
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => fileRef.current?.click()}>
-                  Replace
-                </Button>
-                <Button size="sm" variant="ghost" onClick={clearImage}>
-                  Remove
-                </Button>
-              </div>
+              {editId ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" onClick={doUpdate} disabled={updateOverlay.isPending}>
+                    {updateOverlay.isPending ? 'Updating…' : 'Update overlay'}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => fileRef.current?.click()}>
+                    Replace
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" onClick={doSave} disabled={saveOverlay.isPending}>
+                    {saveOverlay.isPending ? 'Saving…' : 'Save overlay'}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => fileRef.current?.click()}>
+                    Replace
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={clearImage}>
+                    Remove
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <>

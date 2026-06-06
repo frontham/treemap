@@ -1,18 +1,23 @@
 'use client';
 
-import { CloseIcon } from '@/components/icons';
+import { CloseIcon, EditIcon } from '@/components/icons';
 import { IconButton } from '@/components/ui/IconButton';
 import { isLayerVisible, resolveLayerOpacity, useLayers } from '@/components/map/LayersContext';
+import { useAlign } from '@/components/map/AlignContext';
+import { useRole } from '@/components/auth/useRole';
 import { trpc } from '@/lib/trpc/client';
 import type { OverlayView } from '@/server/trpc/routers/overlays';
 
 type Props = { overlay: OverlayView };
 
 /**
- * One row in the layers panel: name · visibility toggle · opacity slider · delete.
+ * One row in the layers panel: name · visibility toggle · opacity slider ·
+ * edit (reposition) · delete.
  */
 export function OverlayRow({ overlay }: Props) {
   const layers = useLayers();
+  const { can } = useRole();
+  const { editOverlay } = useAlign();
   const utils = trpc.useUtils();
   const deleteOverlay = trpc.overlays.delete.useMutation({
     onSuccess: () => utils.overlays.list.invalidate(),
@@ -44,6 +49,16 @@ export function OverlayRow({ overlay }: Props) {
       <span className="mono-num w-8 text-right text-xs text-muted">
         {Math.round(opacity * 100)}%
       </span>
+      {can('editor') ? (
+        <IconButton
+          label={`Edit ${overlay.name}`}
+          size="sm"
+          onClick={() => editOverlay(overlay)}
+          className="text-muted hover:bg-panel hover:text-ink"
+        >
+          <EditIcon size={14} />
+        </IconButton>
+      ) : null}
       <IconButton
         label={`Delete ${overlay.name}`}
         size="sm"

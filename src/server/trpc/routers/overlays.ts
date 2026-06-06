@@ -76,6 +76,39 @@ export const overlaysRouter = router({
       return { id: row.id };
     }),
 
+  update: editorProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).optional(),
+        // Only sent when the image itself is replaced; otherwise corners/opacity
+        // are repositioned against the existing stored image.
+        storageKey: z.string().min(1).optional(),
+        corners: z.array(Corner).length(4).optional(),
+        opacityDefault: z.number().min(0).max(1).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const sets = [];
+      if (input.name !== undefined) sets.push(sql`name = ${input.name}`);
+      if (input.storageKey !== undefined) sets.push(sql`storage_key = ${input.storageKey}`);
+      if (input.corners !== undefined) {
+        sets.push(sql`corners = ${JSON.stringify(input.corners)}::jsonb`);
+      }
+      if (input.opacityDefault !== undefined) {
+        sets.push(sql`opacity_default = ${input.opacityDefault}`);
+      }
+      if (sets.length === 0) return { ok: true };
+      const result = await ctx.tx.execute(sql`
+        UPDATE overlays SET ${sql.join(sets, sql`, `)}
+        WHERE id = ${input.id}
+          AND (current_project_id() IS NULL OR project_id = current_project_id())
+        RETURNING id
+      `);
+      if (!result.rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+      return { ok: true };
+    }),
+
   delete: editorProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
