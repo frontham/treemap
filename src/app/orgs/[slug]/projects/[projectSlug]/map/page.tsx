@@ -14,6 +14,7 @@ import { CalibratePanel } from '@/components/map/CalibratePanel';
 import { AlignByPoints } from '@/components/map/AlignByPoints';
 import { ReferenceImageTool } from '@/components/map/ReferenceImageTool';
 import { TreeMoveHandler } from '@/components/map/TreeMoveHandler';
+import { TreeMoveBar } from '@/components/map/TreeMoveBar';
 import { TreeDetailDrawer } from '@/components/trees/TreeDetailDrawer';
 import { TreeComposerDrawer } from '@/components/trees/TreeComposerDrawer';
 
@@ -40,6 +41,7 @@ export default function ProjectMapPage() {
       <OverlaysLoader />
       <TreeSelectHandler />
       <TreeMoveHandler />
+      <TreeMoveBar />
       <TreeDetailDrawer />
       <TreeComposerDrawer />
     </MapShell>

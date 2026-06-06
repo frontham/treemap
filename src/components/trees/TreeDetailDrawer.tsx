@@ -52,14 +52,6 @@ export function TreeDetailDrawer() {
     },
   });
 
-  const moveTree = trpc.trees.move.useMutation({
-    onSuccess: () => {
-      utils.trees.list.invalidate();
-      if (selectedId) utils.trees.get.invalidate({ id: selectedId });
-      move.cancel();
-    },
-  });
-
   function close() {
     select(null);
     setEditing(false);
@@ -68,12 +60,6 @@ export function TreeDetailDrawer() {
 
   function startMove() {
     if (selectedId && tree) move.begin(selectedId, tree.location);
-  }
-
-  function saveMove() {
-    if (selectedId && move.draft) {
-      moveTree.mutate({ id: selectedId, lng: move.draft.lng, lat: move.draft.lat });
-    }
   }
 
   async function handleSave(values: TreeFormValues) {
@@ -88,7 +74,7 @@ export function TreeDetailDrawer() {
   }
 
   return (
-    <Drawer open={!!selectedId} onClose={close}>
+    <Drawer open={!!selectedId && !isMoving} onClose={close}>
       {isLoading || !tree ? (
         <TreeDetailSkeleton />
       ) : editing ? (
@@ -109,60 +95,6 @@ export function TreeDetailDrawer() {
             </Button>
           }
         />
-      ) : isMoving ? (
-        <div className="flex h-full flex-col gap-4 overflow-y-auto p-5">
-          <TreeDetailHeader
-            commonName={tree.commonName}
-            scientificName={tree.scientificName}
-            onClose={close}
-          />
-          <div className="rounded-lg p-3 hairline bg-panel/60">
-            <p className="mb-3 text-xs text-muted">
-              Drag the blue marker on the map, or type coordinates below. Nothing is saved
-              until you press Save.
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="mb-1 block text-xs text-muted">Latitude</span>
-                <input
-                  type="number"
-                  step={0.000001}
-                  value={move.draft?.lat ?? tree.location.lat}
-                  onChange={(e) => {
-                    const lat = parseFloat(e.target.value);
-                    if (!Number.isNaN(lat)) {
-                      move.setDraft({ lng: move.draft?.lng ?? tree.location.lng, lat });
-                    }
-                  }}
-                  className="mono-num w-full rounded bg-paper px-2 py-1.5 text-sm hairline focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs text-muted">Longitude</span>
-                <input
-                  type="number"
-                  step={0.000001}
-                  value={move.draft?.lng ?? tree.location.lng}
-                  onChange={(e) => {
-                    const lng = parseFloat(e.target.value);
-                    if (!Number.isNaN(lng)) {
-                      move.setDraft({ lat: move.draft?.lat ?? tree.location.lat, lng });
-                    }
-                  }}
-                  className="mono-num w-full rounded bg-paper px-2 py-1.5 text-sm hairline focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </label>
-            </div>
-          </div>
-          <div className="mt-auto flex items-center justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => move.cancel()}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={saveMove} disabled={moveTree.isPending}>
-              {moveTree.isPending ? 'Saving…' : 'Save location'}
-            </Button>
-          </div>
-        </div>
       ) : (
         <div className="flex h-full flex-col gap-5 overflow-y-auto p-5">
           <TreeDetailHeader
