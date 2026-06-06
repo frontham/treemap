@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { LayersIcon, FiltersIcon } from '@/components/icons';
 import { IconButton } from '@/components/ui/IconButton';
 import { LocateMeButton } from '@/components/map/LocateMeButton';
+import { BasemapSwitcher } from '@/components/map/BasemapSwitcher';
 import { LayersPanel } from '@/components/overlays/LayersPanel';
 import { cn } from '@/lib/cn';
 
@@ -29,6 +30,7 @@ export function FloatingControlCluster() {
           <IconButton label="Filters" className="rounded-full">
             <FiltersIcon size={16} />
           </IconButton>
+          <BasemapSwitcher />
           <LocateMeButton />
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 type LayersContextValue = {
   visibility: Record<string, boolean>;
@@ -16,13 +16,45 @@ const LayersContext = createContext<LayersContextValue>({
   setOpacity: () => {},
 });
 
+// Overlay ids are unique per project, so a single store is effectively
+// per-project. Persists each overlay's last on/off + opacity across reloads.
+const STORAGE_KEY = 'treemap.layers';
+type Persisted = { visibility: Record<string, boolean>; opacity: Record<string, number> };
+
+function loadPersisted(): Persisted {
+  if (typeof window === 'undefined') return { visibility: {}, opacity: {} };
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<Persisted>;
+      return { visibility: p.visibility ?? {}, opacity: p.opacity ?? {} };
+    }
+  } catch {
+    /* corrupt/unavailable — start fresh */
+  }
+  return { visibility: {}, opacity: {} };
+}
+
 /**
- * Ephemeral per-session overrides for overlay visibility and opacity.
- * Server defaults apply when an id has no entry here.
+ * Per-overlay visibility + opacity, remembered across reloads (localStorage).
+ * Server defaults apply when an id has no stored entry, so newly created
+ * overlays show by default while any toggle the user makes is remembered.
  */
 export function LayersProvider({ children }: { children: ReactNode }) {
-  const [visibility, setVisibilityState] = useState<Record<string, boolean>>({});
-  const [opacity, setOpacityState] = useState<Record<string, number>>({});
+  const [visibility, setVisibilityState] = useState<Record<string, boolean>>(
+    () => loadPersisted().visibility,
+  );
+  const [opacity, setOpacityState] = useState<Record<string, number>>(
+    () => loadPersisted().opacity,
+  );
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ visibility, opacity }));
+    } catch {
+      /* private mode / quota — ignore */
+    }
+  }, [visibility, opacity]);
 
   const setVisible = (id: string, v: boolean) =>
     setVisibilityState((prev) => ({ ...prev, [id]: v }));

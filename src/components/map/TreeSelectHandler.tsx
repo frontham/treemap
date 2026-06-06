@@ -6,6 +6,7 @@ import { useMap } from './MapContext';
 import { useSelection } from './SelectionContext';
 import { useCompose } from './ComposeContext';
 import { useAlign } from './AlignContext';
+import { useTreeMove } from './TreeMoveContext';
 import { TREES_PIN_LAYER } from './treeLayer';
 
 /**
@@ -19,9 +20,10 @@ export function TreeSelectHandler() {
   const { select } = useSelection();
   const { mode } = useCompose();
   const { aligning } = useAlign();
+  const { movingId } = useTreeMove();
 
   useEffect(() => {
-    if (!map || mode !== 'idle' || aligning) return;
+    if (!map || mode !== 'idle' || aligning || movingId) return;
 
     const onClick = (e: MapLayerMouseEvent) => {
       const feature = e.features?.[0];
@@ -46,7 +48,7 @@ export function TreeSelectHandler() {
       map.off('mouseenter', TREES_PIN_LAYER, enter);
       map.off('mouseleave', TREES_PIN_LAYER, leave);
     };
-  }, [map, mode, aligning, select]);
+  }, [map, mode, aligning, movingId, select]);
 
   return null;
 }

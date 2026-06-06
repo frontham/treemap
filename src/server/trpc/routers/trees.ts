@@ -219,6 +219,24 @@ export const treesRouter = router({
     return { id: row.id };
   }),
 
+  /** Move a single tree. Location-only so it can't clobber other fields; the
+   *  audit trigger logs it to tree_revisions (reversible). */
+  move: editorProcedure
+    .input(z.object({ id: z.string().uuid(), lng: z.number(), lat: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.tx.execute(sql`
+        UPDATE trees SET
+          location   = ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+          updated_by = current_user_id(),
+          updated_at = now()
+        WHERE id = ${input.id} AND deleted_at IS NULL
+        RETURNING id
+      `);
+      const row = result.rows[0] as { id: string } | undefined;
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return { id: row.id };
+    }),
+
   delete: editorProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {

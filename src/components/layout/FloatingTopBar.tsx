@@ -20,7 +20,7 @@ export function FloatingTopBar() {
   const canEdit = can('editor');
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex items-start justify-between px-3">
+    <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex flex-wrap items-start justify-between gap-2 px-3">
       <div className="pointer-events-auto flex items-center gap-2">
         <ProjectSwitcher />
         <Pill className="hidden sm:inline-flex">
@@ -33,7 +33,7 @@ export function FloatingTopBar() {
         </Pill>
       </div>
 
-      <div className="pointer-events-auto flex items-center gap-2">
+      <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
         <PendingIndicator />
         <DataMenu />
         {canEdit ? <MapToolsMenu /> : null}

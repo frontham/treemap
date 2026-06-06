@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from 'react';
 import maplibregl, { type Map, type MapMouseEvent } from 'maplibre-gl';
-import { MAP_STYLE_URL } from './mapStyle';
+import { getBasemap, readStoredBasemapId } from './basemaps';
 import { addTreeLayer } from './treeLayer';
 import type { Cursor } from './MapContext';
 
@@ -29,7 +29,7 @@ export function useMaplibre({ ref, initialCenter, initialZoom }: Args) {
     try {
       instance = new maplibregl.Map({
         container: ref.current,
-        style: MAP_STYLE_URL,
+        style: getBasemap(readStoredBasemapId()).style,
         center: [initialCenter.lng, initialCenter.lat],
         zoom: initialZoom,
         attributionControl: { compact: true },
