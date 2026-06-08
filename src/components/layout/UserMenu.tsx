@@ -52,7 +52,7 @@ export function UserMenu() {
       </IconButton>
 
       {open ? (
-        <div className="absolute right-0 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
+        <div className="absolute right-0 z-30 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <div className="px-3 py-2">
             <p className="truncate text-sm font-medium text-ink">
               {me?.user?.name ?? t('account.title')}

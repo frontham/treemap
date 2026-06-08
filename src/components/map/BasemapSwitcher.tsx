@@ -22,7 +22,7 @@ import { useT } from '@/lib/i18n/LocaleProvider';
  * `carryAppLayers` (setStyle would otherwise wipe everything on top). The
  * choice is remembered in localStorage and applied on the next load.
  */
-export function BasemapSwitcher() {
+export function BasemapSwitcher({ dropUp = true }: { dropUp?: boolean }) {
   const { map } = useMap();
   const t = useT();
   const [id, setId] = useState<BasemapId>(() => readStoredBasemapId());
@@ -61,7 +61,12 @@ export function BasemapSwitcher() {
       </IconButton>
 
       {open ? (
-        <div className="absolute bottom-full right-0 mb-2 max-h-[60vh] w-60 overflow-y-auto rounded-lg bg-paper hairline shadow-floating">
+        <div
+          className={cn(
+            'absolute right-0 z-30 max-h-[60vh] w-60 overflow-y-auto rounded-lg bg-paper hairline shadow-floating',
+            dropUp ? 'bottom-full mb-2' : 'top-full mt-2',
+          )}
+        >
           <div className="sticky top-0 border-b border-hairline bg-paper px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted">
             {t('controls.basemap')}
           </div>

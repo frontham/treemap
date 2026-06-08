@@ -39,6 +39,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'compose.useLocation': 'Use my location',
     'compose.locating': 'Locating…',
 
+    'controls.menu': 'Menu',
+    'controls.location': 'My location',
     'controls.layers': 'Layers',
     'controls.filters': 'Filters',
     'controls.basemap': 'Base map',
@@ -225,6 +227,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'compose.useLocation': 'Mijn locatie gebruiken',
     'compose.locating': 'Lokaliseren…',
 
+    'controls.menu': 'Menu',
+    'controls.location': 'Mijn locatie',
     'controls.layers': 'Lagen',
     'controls.filters': 'Filters',
     'controls.basemap': 'Achtergrondkaart',

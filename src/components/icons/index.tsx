@@ -54,6 +54,8 @@ export const MapIcon = makeIcon(
   </>,
 );
 
+export const MoreIcon = makeIcon(<path d="M4 7h16M4 12h16M4 17h16" />);
+
 export const FiltersIcon = makeIcon(<path d="M3 6h18M6 12h12M10 18h4" />);
 
 export const CloseIcon = makeIcon(<path d="M18 6 6 18M6 6l12 12" />);

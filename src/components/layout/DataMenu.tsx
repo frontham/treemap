@@ -74,7 +74,7 @@ export function DataMenu() {
       </Button>
 
       {open ? (
-        <div className="absolute right-0 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
+        <div className="absolute right-0 z-30 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <MenuLink href="/api/exports/trees.geojson" download>
             {t('data.exportGeojson')}
           </MenuLink>

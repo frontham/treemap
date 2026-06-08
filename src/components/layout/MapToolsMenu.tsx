@@ -50,7 +50,7 @@ export function MapToolsMenu() {
       </Button>
 
       {open ? (
-        <div className="absolute right-0 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
+        <div className="absolute right-0 z-30 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <MenuButton active={tool === 'reference'} onClick={() => pick('reference')}>
             {t('tools.reference')}
           </MenuButton>
