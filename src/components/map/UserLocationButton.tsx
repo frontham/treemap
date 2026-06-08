@@ -49,6 +49,7 @@ export function UserLocationButton() {
     const beam = marker.getElement().querySelector('.ul-beam') as SVGElement | null;
     let added = false;
     let recentered = false;
+    let following = true;
 
     const setHeading = (deg: number) => {
       marker.setRotation(deg);
@@ -66,6 +67,16 @@ export function UserLocationButton() {
         if (!recentered) {
           map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 17), essential: true });
           recentered = true;
+        } else if (following) {
+          // Keep the dot in view as you move — but only when it nears the edge,
+          // so it doesn't wobble while standing still or fight a manual pan.
+          const p = map.project([lng, lat]);
+          const el = map.getContainer();
+          const mx = el.clientWidth * 0.25;
+          const my = el.clientHeight * 0.25;
+          if (p.x < mx || p.x > el.clientWidth - mx || p.y < my || p.y > el.clientHeight - my) {
+            map.easeTo({ center: [lng, lat], duration: 600, essential: true });
+          }
         }
         // coords.heading is only present while moving; the compass below is preferred.
         if (heading != null && !Number.isNaN(heading)) setHeading(heading);
@@ -91,10 +102,18 @@ export function UserLocationButton() {
     window.addEventListener('deviceorientationabsolute', onOrient);
     window.addEventListener('deviceorientation', onOrient);
 
+    // A manual pan stops auto-follow (dragstart only fires for user drags, not
+    // programmatic camera moves), so we never yank the map back under them.
+    const onDragStart = () => {
+      following = false;
+    };
+    map.on('dragstart', onDragStart);
+
     return () => {
       navigator.geolocation.clearWatch(watchId);
       window.removeEventListener('deviceorientationabsolute', onOrient);
       window.removeEventListener('deviceorientation', onOrient);
+      map.off('dragstart', onDragStart);
       marker.remove();
     };
   }, [map, on]);
