@@ -6,6 +6,7 @@ import { TreesLoader } from '@/components/map/TreesLoader';
 import { MapInitialView } from '@/components/map/MapInitialView';
 import { OverlaysLoader } from '@/components/map/OverlaysLoader';
 import { TreeSelectHandler } from '@/components/map/TreeSelectHandler';
+import { SelectedTreeHighlighter } from '@/components/map/SelectedTreeHighlighter';
 import { ComposeBanner } from '@/components/map/ComposeBanner';
 import { ComposeMapHandler } from '@/components/map/ComposeMapHandler';
 import { DraftPinLayer } from '@/components/map/DraftPinLayer';
@@ -40,6 +41,7 @@ export default function ProjectMapPage() {
       <PendingTreesLoader />
       <OverlaysLoader />
       <TreeSelectHandler />
+      <SelectedTreeHighlighter />
       <TreeMoveHandler />
       <TreeMoveBar />
       <TreeDetailDrawer />

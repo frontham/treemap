@@ -59,13 +59,11 @@ export function addTreeLayer(map: Map) {
     type: 'circle',
     source: TREES_SOURCE,
     filter: ['!', ['has', 'point_count']],
+    // The selected tree is highlighted by a separate orange overlay layer
+    // (SelectedTreeHighlighter) — reliable with clustering, where feature ids
+    // aren't stable for feature-state.
     paint: {
-      'circle-color': [
-        'case',
-        ['boolean', ['feature-state', 'selected'], false],
-        colors.accent,
-        '#3F4248',
-      ],
+      'circle-color': '#3F4248',
       'circle-stroke-color': '#FFFFFF',
       'circle-stroke-width': 2,
       'circle-radius': 6,
