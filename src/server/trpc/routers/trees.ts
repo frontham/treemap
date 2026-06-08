@@ -100,6 +100,16 @@ const CalibrateInput = z.object({
   pivotLat: z.number(),
 });
 
+export type RevisionView = {
+  id: string;
+  changedAt: string | Date;
+  operation: 'create' | 'update' | 'delete' | 'restore';
+  /** create/delete: full row snapshot; update: { column: { from, to } }. */
+  diff: Record<string, unknown>;
+  authorName: string | null;
+  authorEmail: string | null;
+};
+
 export const treesRouter = router({
   list: projectProcedure.query(async ({ ctx }) => {
     const result = await ctx.tx.execute(sql`
@@ -235,6 +245,27 @@ export const treesRouter = router({
       const row = result.rows[0] as { id: string } | undefined;
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
       return { id: row.id };
+    }),
+
+  /** Change log for one tree, newest first (from the audit trigger). */
+  history: projectProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }): Promise<RevisionView[]> => {
+      // Scope to the active project explicitly: RLS only fences by org on reads
+      // (project is pinned on writes), so we constrain project_id here like
+      // trees.list / overlays.list do — otherwise another project's tree id in
+      // the same org would leak its history.
+      const res = await ctx.tx.execute(sql`
+        SELECT r.id, r.changed_at AS "changedAt", r.operation, r.diff,
+               u.name AS "authorName", u.email AS "authorEmail"
+        FROM tree_revisions r
+        JOIN trees t ON t.id = r.tree_id
+        LEFT JOIN users u ON u.id = r.changed_by
+        WHERE r.tree_id = ${input.id}
+          AND (current_project_id() IS NULL OR t.project_id = current_project_id())
+        ORDER BY r.changed_at DESC
+      `);
+      return res.rows as RevisionView[];
     }),
 
   delete: editorProcedure

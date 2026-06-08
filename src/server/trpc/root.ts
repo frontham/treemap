@@ -5,6 +5,7 @@ import { customFieldsRouter } from './routers/customFields';
 import { overlaysRouter } from './routers/overlays';
 import { projectsRouter } from './routers/projects';
 import { membersRouter } from './routers/members';
+import { inspectionsRouter } from './routers/inspections';
 
 export const appRouter = router({
   auth: authRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   overlays: overlaysRouter,
   projects: projectsRouter,
   members: membersRouter,
+  inspections: inspectionsRouter,
 });
 
 export type AppRouter = typeof appRouter;
