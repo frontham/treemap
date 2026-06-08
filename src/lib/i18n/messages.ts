@@ -69,6 +69,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'insp.date': 'Inspection date',
     'insp.notes': 'Inspection notes',
     'insp.save': 'Save inspection',
+    'insp.details': 'Details',
 
     'move.title': 'Move tree',
     'move.hint': 'tap the map or drag the marker',
@@ -237,6 +238,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'insp.date': 'Inspectiedatum',
     'insp.notes': 'Inspectienotities',
     'insp.save': 'Inspectie opslaan',
+    'insp.details': 'Details',
 
     'move.title': 'Boom verplaatsen',
     'move.hint': 'tik op de kaart of sleep de markering',
