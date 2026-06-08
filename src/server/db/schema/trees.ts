@@ -12,8 +12,7 @@ import {
 import { organizations } from './orgs';
 import { projects } from './projects';
 import { users } from './users';
-import { species } from './species';
-import { treeHealthEnum, treeConditionEnum, placedViaEnum } from './enums';
+import { treeHealthEnum, treeConditionEnum, placedViaEnum, treeRiskEnum } from './enums';
 import { geographyPoint } from './columns/geographyPoint';
 
 export const trees = pgTable(
@@ -27,11 +26,12 @@ export const trees = pgTable(
     location: geographyPoint('location').notNull(),
     locationAccuracyM: real('location_accuracy_m'),
     placedVia: placedViaEnum('placed_via').notNull(),
-    speciesId: uuid('species_id').references(() => species.id, { onDelete: 'set null' }),
     commonName: text('common_name'),
     scientificName: text('scientific_name'),
     health: treeHealthEnum('health').notNull().default('unknown'),
     condition: treeConditionEnum('condition').notNull().default('unknown'),
+    risk: treeRiskEnum('risk').notNull().default('unknown'),
+    nextInspectionOn: date('next_inspection_on'),
     estimatedAgeYears: integer('estimated_age_years'),
     dbhCm: real('dbh_cm'),
     heightM: real('height_m'),

@@ -10,7 +10,6 @@ export * from './invitations';
 export * from './sessions';
 export * from './emailTokens';
 
-export * from './species';
 export * from './customFieldDefs';
 
 export * from './trees';

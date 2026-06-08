@@ -28,6 +28,8 @@ const CreateTreeInput = z.object({
   scientificName: z.string().optional(),
   health: z.string().optional(),
   condition: z.string().optional(),
+  risk: z.string().optional(),
+  nextInspectionOn: z.string().optional(),
   dbhCm: z.number().optional(),
   heightM: z.number().optional(),
   canopyRadiusM: z.number().optional(),
@@ -43,6 +45,8 @@ const UpdateTreeInput = z.object({
   scientificName: z.string().optional(),
   health: z.string().optional(),
   condition: z.string().optional(),
+  risk: z.string().optional(),
+  nextInspectionOn: z.string().optional(),
   dbhCm: z.number().optional(),
   heightM: z.number().optional(),
   canopyRadiusM: z.number().optional(),
@@ -67,6 +71,8 @@ type TreeDetailRow = {
   scientific_name: string | null;
   health: string | null;
   condition: string | null;
+  risk: string | null;
+  next_inspection_on: string | Date | null;
   dbh_cm: number | null;
   height_m: number | null;
   canopy_radius_m: number | null;
@@ -145,6 +151,7 @@ export const treesRouter = router({
     .query(async ({ ctx, input }): Promise<TreeView> => {
       const result = await ctx.tx.execute(sql`
         SELECT id, common_name, scientific_name, health, condition,
+               risk, next_inspection_on,
                dbh_cm, height_m, canopy_radius_m, estimated_age_years,
                planted_date, notes, location_accuracy_m, custom_fields,
                ST_X(location::geometry) AS lng,
@@ -161,6 +168,8 @@ export const treesRouter = router({
         scientificName: row.scientific_name ?? undefined,
         health: row.health ?? undefined,
         condition: row.condition ?? undefined,
+        risk: row.risk ?? undefined,
+        nextInspectionOn: formatDateOnly(row.next_inspection_on),
         dbhCm: row.dbh_cm ?? undefined,
         heightM: row.height_m ?? undefined,
         canopyRadiusM: row.canopy_radius_m ?? undefined,
@@ -212,6 +221,8 @@ export const treesRouter = router({
         scientific_name       = ${input.scientificName ?? null},
         health                = ${input.health ?? 'unknown'},
         condition             = ${input.condition ?? 'unknown'},
+        risk                  = ${input.risk ?? 'unknown'}::tree_risk,
+        next_inspection_on    = ${input.nextInspectionOn ?? null}::date,
         dbh_cm                = ${input.dbhCm ?? null},
         height_m              = ${input.heightM ?? null},
         canopy_radius_m       = ${input.canopyRadiusM ?? null},
@@ -318,7 +329,7 @@ export const treesRouter = router({
     const result = await ctx.tx.execute(sql`
       INSERT INTO trees (
         org_id, project_id, location, location_accuracy_m, placed_via,
-        common_name, scientific_name, health, condition,
+        common_name, scientific_name, health, condition, risk, next_inspection_on,
         dbh_cm, height_m, canopy_radius_m, estimated_age_years,
         planted_date, notes, custom_fields, created_by, updated_by
       ) VALUES (
@@ -331,6 +342,8 @@ export const treesRouter = router({
         ${input.scientificName ?? null},
         ${input.health ?? 'unknown'},
         ${input.condition ?? 'unknown'},
+        ${input.risk ?? 'unknown'}::tree_risk,
+        ${input.nextInspectionOn ?? null}::date,
         ${input.dbhCm ?? null},
         ${input.heightM ?? null},
         ${input.canopyRadiusM ?? null},

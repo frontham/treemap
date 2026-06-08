@@ -26,6 +26,8 @@ export const placedViaEnum = pgEnum('placed_via', [
   'import',
 ]);
 
+export const treeRiskEnum = pgEnum('tree_risk', ['low', 'moderate', 'high', 'unknown']);
+
 export const customFieldTypeEnum = pgEnum('custom_field_type', [
   'text',
   'number',

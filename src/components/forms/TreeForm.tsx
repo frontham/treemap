@@ -31,6 +31,13 @@ const CONDITION_OPTIONS = [
   { value: 'critical', label: 'Critical' },
 ];
 
+const RISK_OPTIONS = [
+  { value: 'unknown', label: 'Unknown' },
+  { value: 'low', label: 'Low' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'high', label: 'High' },
+];
+
 type Props = {
   location: { lng: number; lat: number };
   initial?: Partial<TreeView>;
@@ -97,6 +104,19 @@ export function TreeForm({
             label={t('field.condition')}
             options={CONDITION_OPTIONS}
             defaultValue={initial?.condition ?? 'unknown'}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField
+            name="risk"
+            label={t('field.risk')}
+            options={RISK_OPTIONS}
+            defaultValue={initial?.risk ?? 'unknown'}
+          />
+          <DateField
+            name="nextInspectionOn"
+            label={t('field.nextDue')}
+            defaultValue={initial?.nextInspectionOn}
           />
         </div>
         <div className="grid grid-cols-3 gap-3">
