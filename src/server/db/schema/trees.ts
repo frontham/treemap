@@ -32,6 +32,7 @@ export const trees = pgTable(
     condition: treeConditionEnum('condition').notNull().default('unknown'),
     risk: treeRiskEnum('risk').notNull().default('unknown'),
     nextInspectionOn: date('next_inspection_on'),
+    treeNo: integer('tree_no'),
     estimatedAgeYears: integer('estimated_age_years'),
     dbhCm: real('dbh_cm'),
     heightM: real('height_m'),

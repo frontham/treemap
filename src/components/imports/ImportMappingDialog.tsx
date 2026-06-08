@@ -27,6 +27,7 @@ const STANDARD_TARGETS: { value: string; key: string }[] = [
   { value: 'estimatedAgeYears', key: 'field.age' },
   { value: 'plantedDate', key: 'field.planted' },
   { value: 'nextInspectionOn', key: 'field.nextDue' },
+  { value: 'treeNo', key: 'field.treeNo' },
   { value: 'notes', key: 'field.notes' },
 ];
 

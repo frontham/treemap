@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
 import { router } from '../init';
 import { projectProcedure } from '../projectProcedure';
 import { requireRole } from '../requireRole';
@@ -8,6 +9,7 @@ import { insertTreeRow, type ImportTreeValues } from '@/server/imports/insertTre
 import type { ImportMapping } from '@/server/db/schema/projects';
 
 const editorProcedure = projectProcedure.use(requireRole('editor'));
+const adminProcedure = projectProcedure.use(requireRole('admin'));
 
 /** Standard tree fields a source column can map onto (besides custom/ignore). */
 const STANDARD_FIELDS = new Set([
@@ -23,8 +25,47 @@ const STANDARD_FIELDS = new Set([
   'plantedDate',
   'nextInspectionOn',
   'notes',
+  'treeNo',
 ]);
-const NUMERIC_FIELDS = new Set(['dbhCm', 'heightM', 'canopyRadiusM', 'estimatedAgeYears']);
+const NUMERIC_FIELDS = new Set(['dbhCm', 'heightM', 'canopyRadiusM', 'estimatedAgeYears', 'treeNo']);
+
+/** target field -> DB column + how to coerce/cast it (for the existing-data remap). */
+const FIELD_DEFS: Record<
+  string,
+  { col: string; kind: 'text' | 'number' | 'date' | 'enum'; enumType?: string; enumValues?: Set<string> }
+> = {
+  commonName: { col: 'common_name', kind: 'text' },
+  scientificName: { col: 'scientific_name', kind: 'text' },
+  notes: { col: 'notes', kind: 'text' },
+  health: { col: 'health', kind: 'enum', enumType: 'tree_health', enumValues: new Set(['healthy', 'fair', 'poor', 'dead', 'unknown']) },
+  condition: { col: 'condition', kind: 'enum', enumType: 'tree_condition', enumValues: new Set(['excellent', 'good', 'fair', 'poor', 'critical', 'unknown']) },
+  risk: { col: 'risk', kind: 'enum', enumType: 'tree_risk', enumValues: new Set(['low', 'moderate', 'high', 'unknown']) },
+  dbhCm: { col: 'dbh_cm', kind: 'number' },
+  heightM: { col: 'height_m', kind: 'number' },
+  canopyRadiusM: { col: 'canopy_radius_m', kind: 'number' },
+  estimatedAgeYears: { col: 'estimated_age_years', kind: 'number' },
+  treeNo: { col: 'tree_no', kind: 'number' },
+  plantedDate: { col: 'planted_date', kind: 'date' },
+  nextInspectionOn: { col: 'next_inspection_on', kind: 'date' },
+};
+
+/** Build a `column = value` fragment for an in-place remap; null = skip (e.g. invalid enum value). */
+function standardSet(target: string, value: unknown): SQL | null {
+  if (value == null || value === '') return null;
+  const d = FIELD_DEFS[target];
+  if (!d) return null;
+  if (d.kind === 'number') {
+    const n = Number(value);
+    return Number.isFinite(n) ? sql`${sql.identifier(d.col)} = ${n}` : null;
+  }
+  if (d.kind === 'enum') {
+    const v = String(value);
+    if (!d.enumValues!.has(v)) return null;
+    return sql`${sql.identifier(d.col)} = ${v}::${sql.raw(d.enumType!)}`;
+  }
+  if (d.kind === 'date') return sql`${sql.identifier(d.col)} = ${String(value)}::date`;
+  return sql`${sql.identifier(d.col)} = ${String(value)}`;
+}
 
 const TransformEnum = z.enum(['circumferenceToDbh', 'yearToDate']);
 
@@ -151,4 +192,68 @@ export const importsRouter = router({
 
       return { imported, skipped };
     }),
+
+  /** Save the project's import/field mapping (configured in settings). */
+  setMapping: adminProcedure.input(MappingSchema).mutation(async ({ ctx, input }) => {
+    await ctx.tx.execute(sql`
+      UPDATE projects SET import_mapping = ${JSON.stringify(input)}::jsonb
+      WHERE id = current_project_id() AND org_id = current_org_id()
+    `);
+    return { ok: true };
+  }),
+
+  /** Whether new trees auto-increment a per-project tree number. */
+  options: projectProcedure.query(async ({ ctx }) => {
+    const res = await ctx.tx.execute(sql`
+      SELECT auto_number AS "autoNumber" FROM projects WHERE id = current_project_id()
+    `);
+    return { autoNumber: !!(res.rows[0] as { autoNumber: boolean } | undefined)?.autoNumber };
+  }),
+
+  setAutoNumber: adminProcedure
+    .input(z.object({ autoNumber: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.tx.execute(sql`
+        UPDATE projects SET auto_number = ${input.autoNumber}
+        WHERE id = current_project_id() AND org_id = current_org_id()
+      `);
+      return { ok: true };
+    }),
+
+  /** Apply the saved mapping to existing trees: backfill standard fields from
+   *  each tree's custom_fields (same transforms as import). Copies, re-runnable. */
+  remapExisting: adminProcedure.mutation(async ({ ctx }) => {
+    const mapRes = await ctx.tx.execute(sql`
+      SELECT import_mapping AS m FROM projects WHERE id = current_project_id()
+    `);
+    const mapping = (mapRes.rows[0] as { m: ImportMapping | null } | undefined)?.m;
+    if (!mapping?.columns) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Configure and save a mapping first.' });
+    }
+    const standardEntries = Object.entries(mapping.columns).filter(([, m]) =>
+      STANDARD_FIELDS.has(m.target),
+    );
+    if (standardEntries.length === 0) return { updated: 0 };
+
+    const treesRes = await ctx.tx.execute(sql`
+      SELECT id, custom_fields FROM trees
+      WHERE project_id = current_project_id() AND deleted_at IS NULL
+    `);
+    let updated = 0;
+    for (const row of treesRes.rows as { id: string; custom_fields: Record<string, unknown> | null }[]) {
+      const cf = row.custom_fields ?? {};
+      const sets: SQL[] = [];
+      for (const [key, m] of standardEntries) {
+        const frag = standardSet(m.target, applyTransform(cf[key], m.transform));
+        if (frag) sets.push(frag);
+      }
+      if (sets.length === 0) continue;
+      await ctx.tx.execute(sql`
+        UPDATE trees SET ${sql.join(sets, sql`, `)}, updated_by = current_user_id(), updated_at = now()
+        WHERE id = ${row.id} AND project_id = current_project_id()
+      `);
+      updated++;
+    }
+    return { updated };
+  }),
 });

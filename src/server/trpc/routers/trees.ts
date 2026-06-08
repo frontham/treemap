@@ -30,6 +30,7 @@ const CreateTreeInput = z.object({
   condition: z.string().optional(),
   risk: z.string().optional(),
   nextInspectionOn: z.string().optional(),
+  treeNo: z.number().optional(),
   dbhCm: z.number().optional(),
   heightM: z.number().optional(),
   canopyRadiusM: z.number().optional(),
@@ -47,6 +48,7 @@ const UpdateTreeInput = z.object({
   condition: z.string().optional(),
   risk: z.string().optional(),
   nextInspectionOn: z.string().optional(),
+  treeNo: z.number().optional(),
   dbhCm: z.number().optional(),
   heightM: z.number().optional(),
   canopyRadiusM: z.number().optional(),
@@ -73,6 +75,7 @@ type TreeDetailRow = {
   condition: string | null;
   risk: string | null;
   next_inspection_on: string | Date | null;
+  tree_no: number | null;
   dbh_cm: number | null;
   height_m: number | null;
   canopy_radius_m: number | null;
@@ -151,7 +154,7 @@ export const treesRouter = router({
     .query(async ({ ctx, input }): Promise<TreeView> => {
       const result = await ctx.tx.execute(sql`
         SELECT id, common_name, scientific_name, health, condition,
-               risk, next_inspection_on,
+               risk, next_inspection_on, tree_no,
                dbh_cm, height_m, canopy_radius_m, estimated_age_years,
                planted_date, notes, location_accuracy_m, custom_fields,
                ST_X(location::geometry) AS lng,
@@ -170,6 +173,7 @@ export const treesRouter = router({
         condition: row.condition ?? undefined,
         risk: row.risk ?? undefined,
         nextInspectionOn: formatDateOnly(row.next_inspection_on),
+        treeNo: row.tree_no ?? undefined,
         dbhCm: row.dbh_cm ?? undefined,
         heightM: row.height_m ?? undefined,
         canopyRadiusM: row.canopy_radius_m ?? undefined,
@@ -329,7 +333,7 @@ export const treesRouter = router({
     const result = await ctx.tx.execute(sql`
       INSERT INTO trees (
         org_id, project_id, location, location_accuracy_m, placed_via,
-        common_name, scientific_name, health, condition, risk, next_inspection_on,
+        common_name, scientific_name, health, condition, risk, next_inspection_on, tree_no,
         dbh_cm, height_m, canopy_radius_m, estimated_age_years,
         planted_date, notes, custom_fields, created_by, updated_by
       ) VALUES (
@@ -344,6 +348,12 @@ export const treesRouter = router({
         ${input.condition ?? 'unknown'},
         ${input.risk ?? 'unknown'}::tree_risk,
         ${input.nextInspectionOn ?? null}::date,
+        COALESCE(
+          ${input.treeNo ?? null},
+          CASE WHEN (SELECT auto_number FROM projects WHERE id = current_project_id())
+               THEN (SELECT COALESCE(MAX(tree_no), 0) + 1 FROM trees WHERE project_id = current_project_id())
+               ELSE NULL END
+        ),
         ${input.dbhCm ?? null},
         ${input.heightM ?? null},
         ${input.canopyRadiusM ?? null},

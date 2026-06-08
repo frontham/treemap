@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, boolean, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { organizations } from './orgs';
 
 /** Which custom-field keys hold inspection metadata (for backfill + imports). */
@@ -27,6 +27,7 @@ export const projects = pgTable(
     slug: text('slug').notNull(),
     inspectionMapping: jsonb('inspection_mapping').$type<InspectionMapping>(),
     importMapping: jsonb('import_mapping').$type<ImportMapping>(),
+    autoNumber: boolean('auto_number').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({

@@ -17,6 +17,7 @@ export type TreeView = {
   condition?: string;
   risk?: string;
   nextInspectionOn?: string;
+  treeNo?: number;
   dbhCm?: number;
   heightM?: number;
   canopyRadiusM?: number;

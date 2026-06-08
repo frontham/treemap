@@ -19,6 +19,11 @@ export function TreeAttributesGrid({ tree }: Props) {
     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
       <Row label={t('field.id')} value={tree.id} mono />
       <Row
+        label={t('field.treeNo')}
+        value={tree.treeNo != null ? String(tree.treeNo) : undefined}
+        mono
+      />
+      <Row
         label={t('field.health')}
         value={tree.health}
         dotClass={tree.health ? HEALTH_COLOR[tree.health] : undefined}
