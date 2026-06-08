@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { LayersIcon, FiltersIcon } from '@/components/icons';
 import { IconButton } from '@/components/ui/IconButton';
-import { LocateMeButton } from '@/components/map/LocateMeButton';
+import { UserLocationButton } from '@/components/map/UserLocationButton';
 import { BasemapSwitcher } from '@/components/map/BasemapSwitcher';
 import { LayersPanel } from '@/components/overlays/LayersPanel';
 import { cn } from '@/lib/cn';
 
 /**
- * Bottom-right floating cluster: layers, filters, locate-me.
+ * Bottom-right floating cluster: layers, filters, basemap, my-location.
  * Layers button toggles a panel of overlay controls above the cluster.
  */
 export function FloatingControlCluster() {
@@ -31,7 +31,7 @@ export function FloatingControlCluster() {
             <FiltersIcon size={16} />
           </IconButton>
           <BasemapSwitcher />
-          <LocateMeButton />
+          <UserLocationButton />
         </div>
       </div>
     </>

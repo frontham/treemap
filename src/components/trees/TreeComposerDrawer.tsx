@@ -14,7 +14,7 @@ import type { TreeFormValues } from '@/components/forms/parseTreeFormData';
  * surfaces the count and OfflineProvider drains it on reconnect.
  */
 export function TreeComposerDrawer() {
-  const { mode, draft, cancel } = useCompose();
+  const { mode, draft, source, accuracyM, cancel } = useCompose();
   const utils = trpc.useUtils();
   const createTree = trpc.trees.create.useMutation({
     // 'always' so the request actually fires (and fails) when offline, instead
@@ -28,7 +28,8 @@ export function TreeComposerDrawer() {
     if (!draft) return;
     const payload = {
       location: draft,
-      placedVia: 'map_click' as const,
+      placedVia: source,
+      locationAccuracyM: accuracyM,
       ...values,
     };
     try {

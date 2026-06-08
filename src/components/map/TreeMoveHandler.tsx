@@ -5,17 +5,22 @@ import { Marker, type MapMouseEvent } from 'maplibre-gl';
 import { useMap } from './MapContext';
 import { useTreeMove } from './TreeMoveContext';
 
+// A crosshair so the exact point is unambiguous — the centre dot is the
+// location. White strokes + drop-shadow stay legible on any basemap.
 function handleEl(): HTMLDivElement {
   const el = document.createElement('div');
-  el.style.cssText =
-    'width:22px;height:22px;border-radius:50%;background:#2563eb;border:3px solid #fff;' +
-    'box-shadow:0 0 0 3px rgba(37,99,235,.35),0 1px 5px rgba(0,0,0,.45);cursor:grab';
+  el.style.cssText = 'width:32px;height:32px;cursor:grab;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));';
+  el.innerHTML =
+    '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M16 2V12M16 20V30M2 16H12M20 16H30" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
+    '<circle cx="16" cy="16" r="2.5" fill="#2563eb" stroke="#fff" stroke-width="1.5"/>' +
+    '</svg>';
   return el;
 }
 
 /**
- * While a tree is being relocated: recenters on the tree, shows a large
- * draggable marker, and lets a map tap drop it at the tapped point (so it works
+ * While a tree is being relocated: recenters on the tree, shows a draggable
+ * crosshair, and lets a map tap drop it at the tapped point (so it works
  * without precise dragging — important on touch). The move bar edits the same
  * draft; nothing persists until that bar saves.
  */
