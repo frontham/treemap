@@ -6,6 +6,7 @@ import { overlaysRouter } from './routers/overlays';
 import { projectsRouter } from './routers/projects';
 import { membersRouter } from './routers/members';
 import { inspectionsRouter } from './routers/inspections';
+import { importsRouter } from './routers/imports';
 
 export const appRouter = router({
   auth: authRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
   projects: projectsRouter,
   members: membersRouter,
   inspections: inspectionsRouter,
+  imports: importsRouter,
 });
 
 export type AppRouter = typeof appRouter;

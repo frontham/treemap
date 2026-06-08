@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ChevronDownIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
-import { trpc } from '@/lib/trpc/client';
 import { useRole } from '@/components/auth/useRole';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { ImportMappingDialog, type ImportSource } from '@/components/imports/ImportMappingDialog';
 
 /**
  * Dropdown in the top bar for data actions.
@@ -22,21 +22,7 @@ export function DataMenu() {
   const { can } = useRole();
   const t = useT();
   const canImport = can('editor');
-  const utils = trpc.useUtils();
-  const importGeoJson = trpc.trees.importGeoJson.useMutation({
-    onSuccess: (r) => {
-      utils.trees.list.invalidate();
-      window.alert(`Imported ${r.imported} tree${plural(r.imported)}, skipped ${r.skipped}.`);
-    },
-    onError: (e) => window.alert(`Import failed: ${e.message}`),
-  });
-  const importCsv = trpc.trees.importCsv.useMutation({
-    onSuccess: (r) => {
-      utils.trees.list.invalidate();
-      window.alert(`Imported ${r.imported} tree${plural(r.imported)}, skipped ${r.skipped}.`);
-    },
-    onError: (e) => window.alert(`Import failed: ${e.message}`),
-  });
+  const [importSource, setImportSource] = useState<ImportSource | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -55,7 +41,12 @@ export function DataMenu() {
     try {
       const json = JSON.parse(await file.text()) as { features?: unknown };
       const features = Array.isArray(json.features) ? json.features : [json];
-      importGeoJson.mutate({ features });
+      const keys = new Set<string>();
+      for (const f of features) {
+        const props = (f as { properties?: Record<string, unknown> } | null)?.properties;
+        if (props) for (const k of Object.keys(props)) keys.add(k);
+      }
+      setImportSource({ kind: 'geojson', features, columns: [...keys] });
     } catch (err) {
       window.alert(`Couldn't parse GeoJSON: ${(err as Error).message}`);
     }
@@ -66,7 +57,8 @@ export function DataMenu() {
     e.target.value = '';
     if (!file) return;
     setOpen(false);
-    importCsv.mutate({ csv: await file.text() });
+    const csv = await file.text();
+    setImportSource({ kind: 'csv', csv, columns: parseCsvHeader(csv) });
   };
 
   return (
@@ -117,6 +109,10 @@ export function DataMenu() {
         className="hidden"
         onChange={handleCsvFile}
       />
+
+      {importSource ? (
+        <ImportMappingDialog source={importSource} onClose={() => setImportSource(null)} />
+      ) : null}
     </div>
   );
 }
@@ -153,6 +149,10 @@ function MenuButton({
   );
 }
 
-function plural(n: number): string {
-  return n === 1 ? '' : 's';
+function parseCsvHeader(csv: string): string[] {
+  const first = csv.split(/\r?\n/, 1)[0] ?? '';
+  return first
+    .split(',')
+    .map((h) => h.trim().replace(/^"|"$/g, ''))
+    .filter(Boolean);
 }

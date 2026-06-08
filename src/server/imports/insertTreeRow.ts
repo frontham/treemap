@@ -8,6 +8,8 @@ export type ImportTreeValues = {
   scientificName?: string | null;
   health?: string | null;
   condition?: string | null;
+  risk?: string | null;
+  nextInspectionOn?: string | null;
   dbhCm?: number | null;
   heightM?: number | null;
   canopyRadiusM?: number | null;
@@ -26,7 +28,7 @@ export async function insertTreeRow(tx: Tx, v: ImportTreeValues): Promise<void> 
   await tx.execute(sql`
     INSERT INTO trees (
       org_id, project_id, location, placed_via,
-      common_name, scientific_name, health, condition,
+      common_name, scientific_name, health, condition, risk, next_inspection_on,
       dbh_cm, height_m, canopy_radius_m, estimated_age_years,
       planted_date, notes, custom_fields,
       created_by, updated_by
@@ -39,6 +41,8 @@ export async function insertTreeRow(tx: Tx, v: ImportTreeValues): Promise<void> 
       ${v.scientificName ?? null},
       ${v.health ?? 'unknown'},
       ${v.condition ?? 'unknown'},
+      ${v.risk ?? 'unknown'}::tree_risk,
+      ${v.nextInspectionOn ?? null}::date,
       ${v.dbhCm ?? null},
       ${v.heightM ?? null},
       ${v.canopyRadiusM ?? null},
