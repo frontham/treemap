@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "PowerShell(npm run db:migrate 2>&1)",
-      "PowerShell(npm run typecheck 2>&1)"
+      "PowerShell(npm run typecheck 2>&1)",
+      "WebSearch",
+      "WebFetch(domain:service.pdok.nl)",
+      "WebFetch(domain:tiles.versatiles.org)"
     ]
   }
 }

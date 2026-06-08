@@ -5,9 +5,11 @@ import type { Route } from 'next';
 import { trpc } from '@/lib/trpc/client';
 import { cn } from '@/lib/cn';
 import { Wordmark } from '@/components/brand/Logo';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /** Landing grid of the org's projects; each card opens that project's map. */
 export function ProjectPicker() {
+  const t = useT();
   const { data: me } = trpc.auth.me.useQuery();
   const { data: projects = [], isLoading } = trpc.projects.list.useQuery(undefined, {
     enabled: !!me?.org,
@@ -19,7 +21,7 @@ export function ProjectPicker() {
       <Wordmark className="mb-6" />
       <header className="mb-6 flex items-baseline justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Projects</h1>
+          <h1 className="text-xl font-semibold text-ink">{t('projects.title')}</h1>
           <p className="text-sm text-muted">
             {me?.user?.name ?? me?.user?.email} · {me?.org?.role}
           </p>
@@ -27,9 +29,9 @@ export function ProjectPicker() {
       </header>
 
       {isLoading ? (
-        <p className="text-sm text-muted">Loading…</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       ) : projects.length === 0 ? (
-        <p className="text-sm text-muted">No projects yet.</p>
+        <p className="text-sm text-muted">{t('projects.none')}</p>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {projects.map((p) => (

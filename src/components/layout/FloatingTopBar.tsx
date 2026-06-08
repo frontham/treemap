@@ -9,6 +9,7 @@ import { PendingIndicator } from './PendingIndicator';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { UserMenu } from './UserMenu';
 import { useRole } from '@/components/auth/useRole';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Top floating chrome: project switcher + search on the left; data, editor-only
@@ -17,23 +18,24 @@ import { useRole } from '@/components/auth/useRole';
  */
 export function FloatingTopBar() {
   const { can } = useRole();
+  const t = useT();
   const canEdit = can('editor');
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex items-start justify-between px-3">
+    <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex flex-wrap items-start justify-between gap-2 px-3">
       <div className="pointer-events-auto flex items-center gap-2">
         <ProjectSwitcher />
         <Pill className="hidden sm:inline-flex">
           <SearchIcon size={14} className="text-muted" />
           <input
-            aria-label="Search trees"
-            placeholder="Search trees…"
+            aria-label={t('search.placeholder')}
+            placeholder={t('search.placeholder')}
             className="w-40 bg-transparent text-sm placeholder:text-muted focus:outline-none"
           />
         </Pill>
       </div>
 
-      <div className="pointer-events-auto flex items-center gap-2">
+      <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
         <PendingIndicator />
         <DataMenu />
         {canEdit ? <MapToolsMenu /> : null}

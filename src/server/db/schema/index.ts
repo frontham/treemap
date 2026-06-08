@@ -10,11 +10,11 @@ export * from './invitations';
 export * from './sessions';
 export * from './emailTokens';
 
-export * from './species';
 export * from './customFieldDefs';
 
 export * from './trees';
 export * from './treeRevisions';
+export * from './treeInspections';
 export * from './treePhotos';
 
 export * from './overlays';

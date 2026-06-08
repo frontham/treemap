@@ -7,7 +7,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
-  /** Tailwind width class. Defaults to a 420px panel. */
+  /** Tailwind width class. Defaults to full-width on phones, a 420px panel from sm up. */
   width?: string;
 };
 
@@ -16,7 +16,7 @@ type Props = {
  * Stays mounted so child state survives close/reopen — uses translate-x for the
  * animation rather than conditional rendering.
  */
-export function Drawer({ open, onClose, children, width = 'w-[420px]' }: Props) {
+export function Drawer({ open, onClose, children, width = 'w-full sm:w-[420px]' }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && open) onClose();

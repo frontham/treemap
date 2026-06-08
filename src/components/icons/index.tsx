@@ -47,6 +47,13 @@ export const LayersIcon = makeIcon(
   </>,
 );
 
+export const MapIcon = makeIcon(
+  <>
+    <path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z" />
+    <path d="M9 4v16M15 6v16" />
+  </>,
+);
+
 export const FiltersIcon = makeIcon(<path d="M3 6h18M6 12h12M10 18h4" />);
 
 export const CloseIcon = makeIcon(<path d="M18 6 6 18M6 6l12 12" />);

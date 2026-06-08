@@ -5,6 +5,8 @@ export type TreeFormValues = {
   scientificName?: string;
   health?: string;
   condition?: string;
+  risk?: string;
+  nextInspectionOn?: string;
   dbhCm?: number;
   heightM?: number;
   canopyRadiusM?: number;
@@ -36,6 +38,8 @@ export function parseTreeFormValues(
     scientificName: text('scientificName'),
     health: text('health'),
     condition: text('condition'),
+    risk: text('risk'),
+    nextInspectionOn: text('nextInspectionOn'),
     dbhCm: num('dbhCm'),
     heightM: num('heightM'),
     canopyRadiusM: num('canopyRadiusM'),

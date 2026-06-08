@@ -28,6 +28,9 @@ const CreateTreeInput = z.object({
   scientificName: z.string().optional(),
   health: z.string().optional(),
   condition: z.string().optional(),
+  risk: z.string().optional(),
+  nextInspectionOn: z.string().optional(),
+  treeNo: z.number().optional(),
   dbhCm: z.number().optional(),
   heightM: z.number().optional(),
   canopyRadiusM: z.number().optional(),
@@ -43,6 +46,9 @@ const UpdateTreeInput = z.object({
   scientificName: z.string().optional(),
   health: z.string().optional(),
   condition: z.string().optional(),
+  risk: z.string().optional(),
+  nextInspectionOn: z.string().optional(),
+  treeNo: z.number().optional(),
   dbhCm: z.number().optional(),
   heightM: z.number().optional(),
   canopyRadiusM: z.number().optional(),
@@ -67,6 +73,9 @@ type TreeDetailRow = {
   scientific_name: string | null;
   health: string | null;
   condition: string | null;
+  risk: string | null;
+  next_inspection_on: string | Date | null;
+  tree_no: number | null;
   dbh_cm: number | null;
   height_m: number | null;
   canopy_radius_m: number | null;
@@ -99,6 +108,16 @@ const CalibrateInput = z.object({
   pivotLng: z.number(),
   pivotLat: z.number(),
 });
+
+export type RevisionView = {
+  id: string;
+  changedAt: string | Date;
+  operation: 'create' | 'update' | 'delete' | 'restore';
+  /** create/delete: full row snapshot; update: { column: { from, to } }. */
+  diff: Record<string, unknown>;
+  authorName: string | null;
+  authorEmail: string | null;
+};
 
 export const treesRouter = router({
   list: projectProcedure.query(async ({ ctx }) => {
@@ -135,6 +154,7 @@ export const treesRouter = router({
     .query(async ({ ctx, input }): Promise<TreeView> => {
       const result = await ctx.tx.execute(sql`
         SELECT id, common_name, scientific_name, health, condition,
+               risk, next_inspection_on, tree_no,
                dbh_cm, height_m, canopy_radius_m, estimated_age_years,
                planted_date, notes, location_accuracy_m, custom_fields,
                ST_X(location::geometry) AS lng,
@@ -151,6 +171,9 @@ export const treesRouter = router({
         scientificName: row.scientific_name ?? undefined,
         health: row.health ?? undefined,
         condition: row.condition ?? undefined,
+        risk: row.risk ?? undefined,
+        nextInspectionOn: formatDateOnly(row.next_inspection_on),
+        treeNo: row.tree_no ?? undefined,
         dbhCm: row.dbh_cm ?? undefined,
         heightM: row.height_m ?? undefined,
         canopyRadiusM: row.canopy_radius_m ?? undefined,
@@ -202,6 +225,8 @@ export const treesRouter = router({
         scientific_name       = ${input.scientificName ?? null},
         health                = ${input.health ?? 'unknown'},
         condition             = ${input.condition ?? 'unknown'},
+        risk                  = ${input.risk ?? 'unknown'}::tree_risk,
+        next_inspection_on    = ${input.nextInspectionOn ?? null}::date,
         dbh_cm                = ${input.dbhCm ?? null},
         height_m              = ${input.heightM ?? null},
         canopy_radius_m       = ${input.canopyRadiusM ?? null},
@@ -218,6 +243,45 @@ export const treesRouter = router({
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     return { id: row.id };
   }),
+
+  /** Move a single tree. Location-only so it can't clobber other fields; the
+   *  audit trigger logs it to tree_revisions (reversible). */
+  move: editorProcedure
+    .input(z.object({ id: z.string().uuid(), lng: z.number(), lat: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.tx.execute(sql`
+        UPDATE trees SET
+          location   = ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
+          updated_by = current_user_id(),
+          updated_at = now()
+        WHERE id = ${input.id} AND deleted_at IS NULL
+        RETURNING id
+      `);
+      const row = result.rows[0] as { id: string } | undefined;
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return { id: row.id };
+    }),
+
+  /** Change log for one tree, newest first (from the audit trigger). */
+  history: projectProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }): Promise<RevisionView[]> => {
+      // Scope to the active project explicitly: RLS only fences by org on reads
+      // (project is pinned on writes), so we constrain project_id here like
+      // trees.list / overlays.list do — otherwise another project's tree id in
+      // the same org would leak its history.
+      const res = await ctx.tx.execute(sql`
+        SELECT r.id, r.changed_at AS "changedAt", r.operation, r.diff,
+               u.name AS "authorName", u.email AS "authorEmail"
+        FROM tree_revisions r
+        JOIN trees t ON t.id = r.tree_id
+        LEFT JOIN users u ON u.id = r.changed_by
+        WHERE r.tree_id = ${input.id}
+          AND (current_project_id() IS NULL OR t.project_id = current_project_id())
+        ORDER BY r.changed_at DESC
+      `);
+      return res.rows as RevisionView[];
+    }),
 
   delete: editorProcedure
     .input(z.object({ id: z.string().uuid() }))
@@ -269,7 +333,7 @@ export const treesRouter = router({
     const result = await ctx.tx.execute(sql`
       INSERT INTO trees (
         org_id, project_id, location, location_accuracy_m, placed_via,
-        common_name, scientific_name, health, condition,
+        common_name, scientific_name, health, condition, risk, next_inspection_on, tree_no,
         dbh_cm, height_m, canopy_radius_m, estimated_age_years,
         planted_date, notes, custom_fields, created_by, updated_by
       ) VALUES (
@@ -282,6 +346,14 @@ export const treesRouter = router({
         ${input.scientificName ?? null},
         ${input.health ?? 'unknown'},
         ${input.condition ?? 'unknown'},
+        ${input.risk ?? 'unknown'}::tree_risk,
+        ${input.nextInspectionOn ?? null}::date,
+        COALESCE(
+          ${input.treeNo ?? null},
+          CASE WHEN (SELECT auto_number FROM projects WHERE id = current_project_id())
+               THEN (SELECT COALESCE(MAX(tree_no), 0) + 1 FROM trees WHERE project_id = current_project_id())
+               ELSE NULL END
+        ),
         ${input.dbhCm ?? null},
         ${input.heightM ?? null},
         ${input.canopyRadiusM ?? null},

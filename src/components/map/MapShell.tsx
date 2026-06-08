@@ -7,6 +7,7 @@ import { SelectionProvider } from './SelectionContext';
 import { ComposeProvider } from './ComposeContext';
 import { LayersProvider } from './LayersContext';
 import { AlignProvider } from './AlignContext';
+import { TreeMoveProvider } from './TreeMoveContext';
 import { useMaplibre } from './useMaplibre';
 import { MapErrorOverlay } from './MapErrorOverlay';
 
@@ -34,11 +35,13 @@ export function MapShell({ initialCenter, initialZoom, children }: Props) {
         <ComposeProvider>
           <LayersProvider>
             <AlignProvider>
-              <main className="relative h-screen w-screen overflow-hidden bg-paper">
-                <div ref={containerRef} className="h-full w-full" />
-                {error ? <MapErrorOverlay message={error} /> : null}
-                {children}
-              </main>
+              <TreeMoveProvider>
+                <main className="relative h-screen w-screen overflow-hidden bg-paper">
+                  <div ref={containerRef} className="h-full w-full" />
+                  {error ? <MapErrorOverlay message={error} /> : null}
+                  {children}
+                </main>
+              </TreeMoveProvider>
             </AlignProvider>
           </LayersProvider>
         </ComposeProvider>

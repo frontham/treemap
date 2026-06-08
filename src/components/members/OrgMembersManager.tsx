@@ -5,12 +5,14 @@ import { trpc } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { cn } from '@/lib/cn';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 const ROLES = ['owner', 'admin', 'editor', 'viewer'] as const;
 type Role = (typeof ROLES)[number];
 
 /** Org-admin member management: list, change role, remove, and add members. */
 export function OrgMembersManager() {
+  const t = useT();
   const utils = trpc.useUtils();
   const { data: members = [], error, isLoading } = trpc.members.listOrg.useQuery();
   const invalidate = () => utils.members.listOrg.invalidate();
@@ -32,15 +34,17 @@ export function OrgMembersManager() {
   });
 
   if (error) {
-    return <p className="text-sm text-muted">You need to be an org admin to manage members.</p>;
+    return <p className="text-sm text-muted">{t('members.noAccess')}</p>;
   }
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8">
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">Members</h2>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">
+          {t('members.title')}
+        </h2>
         {isLoading ? (
-          <p className="text-sm text-muted">Loading…</p>
+          <p className="text-sm text-muted">{t('common.loading')}</p>
         ) : (
           <ul className="divide-y divide-hairline rounded-lg bg-panel hairline">
             {members.map((m) => (
@@ -69,7 +73,7 @@ export function OrgMembersManager() {
                     className="text-danger hover:bg-danger/10"
                     onClick={() => remove.mutate({ userId: m.userId })}
                   >
-                    Remove
+                    {t('members.remove')}
                   </Button>
                 </div>
               </li>
@@ -79,7 +83,9 @@ export function OrgMembersManager() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">Add member</h2>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">
+          {t('members.add')}
+        </h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -102,7 +108,7 @@ export function OrgMembersManager() {
           />
           <input
             className={inputBase}
-            placeholder="Name (optional)"
+            placeholder={t('members.name')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
@@ -111,7 +117,7 @@ export function OrgMembersManager() {
             type="password"
             required
             minLength={8}
-            placeholder="Initial password (min 8)"
+            placeholder={t('members.password')}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
@@ -131,7 +137,7 @@ export function OrgMembersManager() {
           ) : null}
           <div className="sm:col-span-2">
             <Button type="submit" disabled={add.isPending}>
-              {add.isPending ? 'Adding…' : 'Add member'}
+              {add.isPending ? t('members.adding') : t('members.add')}
             </Button>
           </div>
         </form>

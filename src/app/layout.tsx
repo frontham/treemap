@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { cookies } from 'next/headers';
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { OfflineProvider } from '@/components/providers/OfflineProvider';
+import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config';
 import '@/styles/globals.css';
 
 const sans = Inter({
@@ -23,12 +26,16 @@ export const metadata: Metadata = {
   description: 'Document trees on the map.',
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
+  const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    <html lang={locale} className={`${sans.variable} ${mono.variable}`}>
       <body>
         <QueryProvider>
-          <OfflineProvider>{children}</OfflineProvider>
+          <OfflineProvider>
+            <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+          </OfflineProvider>
         </QueryProvider>
       </body>
     </html>

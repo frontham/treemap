@@ -6,6 +6,7 @@ import { TreesLoader } from '@/components/map/TreesLoader';
 import { MapInitialView } from '@/components/map/MapInitialView';
 import { OverlaysLoader } from '@/components/map/OverlaysLoader';
 import { TreeSelectHandler } from '@/components/map/TreeSelectHandler';
+import { SelectedTreeHighlighter } from '@/components/map/SelectedTreeHighlighter';
 import { ComposeBanner } from '@/components/map/ComposeBanner';
 import { ComposeMapHandler } from '@/components/map/ComposeMapHandler';
 import { DraftPinLayer } from '@/components/map/DraftPinLayer';
@@ -13,6 +14,8 @@ import { PendingTreesLoader } from '@/components/map/PendingTreesLoader';
 import { CalibratePanel } from '@/components/map/CalibratePanel';
 import { AlignByPoints } from '@/components/map/AlignByPoints';
 import { ReferenceImageTool } from '@/components/map/ReferenceImageTool';
+import { TreeMoveHandler } from '@/components/map/TreeMoveHandler';
+import { TreeMoveBar } from '@/components/map/TreeMoveBar';
 import { TreeDetailDrawer } from '@/components/trees/TreeDetailDrawer';
 import { TreeComposerDrawer } from '@/components/trees/TreeComposerDrawer';
 
@@ -38,6 +41,9 @@ export default function ProjectMapPage() {
       <PendingTreesLoader />
       <OverlaysLoader />
       <TreeSelectHandler />
+      <SelectedTreeHighlighter />
+      <TreeMoveHandler />
+      <TreeMoveBar />
       <TreeDetailDrawer />
       <TreeComposerDrawer />
     </MapShell>
