@@ -8,22 +8,6 @@ import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from './TreeView';
 import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
 
-const HEALTH_LABEL: Record<string, string> = {
-  healthy: 'Healthy',
-  fair: 'Fair',
-  poor: 'Poor',
-  dead: 'Dead',
-  unknown: 'Unknown',
-};
-const CONDITION_LABEL: Record<string, string> = {
-  excellent: 'Excellent',
-  good: 'Good',
-  fair: 'Fair',
-  poor: 'Poor',
-  critical: 'Critical',
-  unknown: 'Unknown',
-};
-
 type Props = { treeId: string; tree: TreeView; canEdit: boolean };
 
 function formatVal(v: unknown): string {
@@ -121,9 +105,9 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
               </div>
               <p className="text-xs text-muted">
                 {t('insp.health')}:{' '}
-                <span className="text-ink">{HEALTH_LABEL[i.health] ?? i.health}</span> ·{' '}
+                <span className="text-ink">{t(`health.${i.health}`)}</span> ·{' '}
                 {t('insp.condition')}:{' '}
-                <span className="text-ink">{CONDITION_LABEL[i.condition] ?? i.condition}</span>
+                <span className="text-ink">{t(`condition.${i.condition}`)}</span>
               </p>
               {i.notes ? <p className="mt-1 text-xs text-ink">{i.notes}</p> : null}
               <InspectionDetails

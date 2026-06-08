@@ -14,29 +14,9 @@ import { TextareaField } from './fields/TextareaField';
 import { CustomFieldRenderer } from './customFields/CustomFieldRenderer';
 import { parseTreeFormValues, type TreeFormValues } from './parseTreeFormData';
 
-const HEALTH_OPTIONS = [
-  { value: 'unknown', label: 'Unknown' },
-  { value: 'healthy', label: 'Healthy' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'poor', label: 'Poor' },
-  { value: 'dead', label: 'Dead' },
-];
-
-const CONDITION_OPTIONS = [
-  { value: 'unknown', label: 'Unknown' },
-  { value: 'excellent', label: 'Excellent' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'poor', label: 'Poor' },
-  { value: 'critical', label: 'Critical' },
-];
-
-const RISK_OPTIONS = [
-  { value: 'unknown', label: 'Unknown' },
-  { value: 'low', label: 'Low' },
-  { value: 'moderate', label: 'Moderate' },
-  { value: 'high', label: 'High' },
-];
+const HEALTH_VALUES = ['unknown', 'healthy', 'fair', 'poor', 'dead'];
+const CONDITION_VALUES = ['unknown', 'excellent', 'good', 'fair', 'poor', 'critical'];
+const RISK_VALUES = ['unknown', 'low', 'moderate', 'high'];
 
 type Props = {
   location: { lng: number; lat: number };
@@ -60,6 +40,9 @@ export function TreeForm({
   footerLeft,
 }: Props) {
   const t = useT();
+  const healthOptions = HEALTH_VALUES.map((v) => ({ value: v, label: t(`health.${v}`) }));
+  const conditionOptions = CONDITION_VALUES.map((v) => ({ value: v, label: t(`condition.${v}`) }));
+  const riskOptions = RISK_VALUES.map((v) => ({ value: v, label: t(`risk.${v}`) }));
   const { data: defs = [] } = trpc.customFields.list.useQuery();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -96,13 +79,13 @@ export function TreeForm({
           <SelectField
             name="health"
             label={t('field.health')}
-            options={HEALTH_OPTIONS}
+            options={healthOptions}
             defaultValue={initial?.health ?? 'unknown'}
           />
           <SelectField
             name="condition"
             label={t('field.condition')}
-            options={CONDITION_OPTIONS}
+            options={conditionOptions}
             defaultValue={initial?.condition ?? 'unknown'}
           />
         </div>
@@ -110,7 +93,7 @@ export function TreeForm({
           <SelectField
             name="risk"
             label={t('field.risk')}
-            options={RISK_OPTIONS}
+            options={riskOptions}
             defaultValue={initial?.risk ?? 'unknown'}
           />
           <DateField

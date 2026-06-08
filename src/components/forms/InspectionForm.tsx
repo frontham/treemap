@@ -12,22 +12,8 @@ import { TextareaField } from './fields/TextareaField';
 import { CustomFieldRenderer } from './customFields/CustomFieldRenderer';
 import { parseTreeFormValues } from './parseTreeFormData';
 
-const HEALTH_OPTIONS = [
-  { value: 'unknown', label: 'Unknown' },
-  { value: 'healthy', label: 'Healthy' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'poor', label: 'Poor' },
-  { value: 'dead', label: 'Dead' },
-];
-
-const CONDITION_OPTIONS = [
-  { value: 'unknown', label: 'Unknown' },
-  { value: 'excellent', label: 'Excellent' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'poor', label: 'Poor' },
-  { value: 'critical', label: 'Critical' },
-];
+const HEALTH_VALUES = ['unknown', 'healthy', 'fair', 'poor', 'dead'];
+const CONDITION_VALUES = ['unknown', 'excellent', 'good', 'fair', 'poor', 'critical'];
 
 type Health = 'healthy' | 'fair' | 'poor' | 'dead' | 'unknown';
 type Condition = 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'unknown';
@@ -57,6 +43,8 @@ type Props = {
  *  inspection date. Reuses the tree field parser, including custom fields. */
 export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Props) {
   const t = useT();
+  const healthOptions = HEALTH_VALUES.map((v) => ({ value: v, label: t(`health.${v}`) }));
+  const conditionOptions = CONDITION_VALUES.map((v) => ({ value: v, label: t(`condition.${v}`) }));
   const { data: defs = [] } = trpc.customFields.list.useQuery();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -81,8 +69,8 @@ export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Pro
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <DateField name="inspectedOn" label={t('insp.date')} defaultValue={today} />
       <div className="grid grid-cols-2 gap-3">
-        <SelectField name="health" label={t('insp.health')} options={HEALTH_OPTIONS} defaultValue={tree.health ?? 'unknown'} />
-        <SelectField name="condition" label={t('insp.condition')} options={CONDITION_OPTIONS} defaultValue={tree.condition ?? 'unknown'} />
+        <SelectField name="health" label={t('insp.health')} options={healthOptions} defaultValue={tree.health ?? 'unknown'} />
+        <SelectField name="condition" label={t('insp.condition')} options={conditionOptions} defaultValue={tree.condition ?? 'unknown'} />
       </div>
       <div className="grid grid-cols-3 gap-3">
         <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={tree.dbhCm} />

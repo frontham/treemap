@@ -25,10 +25,14 @@ export function TreeAttributesGrid({ tree }: Props) {
       />
       <Row
         label={t('field.health')}
-        value={tree.health}
+        value={tree.health ? t(`health.${tree.health}`) : undefined}
         dotClass={tree.health ? HEALTH_COLOR[tree.health] : undefined}
       />
-      <Row label={t('field.risk')} value={tree.risk} />
+      <Row
+        label={t('field.condition')}
+        value={tree.condition ? t(`condition.${tree.condition}`) : undefined}
+      />
+      <Row label={t('field.risk')} value={tree.risk ? t(`risk.${tree.risk}`) : undefined} />
       <Row label={t('field.nextDue')} value={tree.nextInspectionOn} mono />
       <Row label={t('field.dbh')} value={tree.dbhCm != null ? `${tree.dbhCm} cm` : undefined} mono />
       <Row
