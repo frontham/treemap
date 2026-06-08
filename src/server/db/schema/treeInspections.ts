@@ -21,6 +21,10 @@ export const treeInspections = pgTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
     inspectedOn: date('inspected_on').notNull(),
     inspectedBy: uuid('inspected_by').references(() => users.id, { onDelete: 'set null' }),
+    /** External inspector name (imports, where the inspector isn't an app user). */
+    inspectorName: text('inspector_name'),
+    /** Source-system identifier carried over on import (e.g. GeoVisia id). */
+    externalRef: text('external_ref'),
     health: treeHealthEnum('health').notNull().default('unknown'),
     condition: treeConditionEnum('condition').notNull().default('unknown'),
     dbhCm: real('dbh_cm'),

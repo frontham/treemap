@@ -3,6 +3,7 @@
 import { type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from '@/components/trees/TreeView';
 import { SelectField } from './fields/SelectField';
 import { NumberField } from './fields/NumberField';
@@ -55,6 +56,7 @@ type Props = {
 /** New-inspection form: all condition fields prefilled from the tree, plus an
  *  inspection date. Reuses the tree field parser, including custom fields. */
 export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Props) {
+  const t = useT();
   const { data: defs = [] } = trpc.customFields.list.useQuery();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -77,22 +79,24 @@ export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Pro
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <DateField name="inspectedOn" label="Inspection date" defaultValue={today} />
+      <DateField name="inspectedOn" label={t('insp.date')} defaultValue={today} />
       <div className="grid grid-cols-2 gap-3">
-        <SelectField name="health" label="Health" options={HEALTH_OPTIONS} defaultValue={tree.health ?? 'unknown'} />
-        <SelectField name="condition" label="Condition" options={CONDITION_OPTIONS} defaultValue={tree.condition ?? 'unknown'} />
+        <SelectField name="health" label={t('insp.health')} options={HEALTH_OPTIONS} defaultValue={tree.health ?? 'unknown'} />
+        <SelectField name="condition" label={t('insp.condition')} options={CONDITION_OPTIONS} defaultValue={tree.condition ?? 'unknown'} />
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <NumberField name="dbhCm" label="DBH" suffix="cm" defaultValue={tree.dbhCm} />
-        <NumberField name="heightM" label="Height" suffix="m" defaultValue={tree.heightM} />
-        <NumberField name="estimatedAgeYears" label="Age" suffix="yrs" defaultValue={tree.estimatedAgeYears} />
+        <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={tree.dbhCm} />
+        <NumberField name="heightM" label={t('field.height')} suffix="m" defaultValue={tree.heightM} />
+        <NumberField name="estimatedAgeYears" label={t('field.age')} suffix="yrs" defaultValue={tree.estimatedAgeYears} />
       </div>
-      <NumberField name="canopyRadiusM" label="Canopy radius" suffix="m" defaultValue={tree.canopyRadiusM} />
-      <TextareaField name="notes" label="Inspection notes" defaultValue={tree.notes} />
+      <NumberField name="canopyRadiusM" label={t('field.canopy')} suffix="m" defaultValue={tree.canopyRadiusM} />
+      <TextareaField name="notes" label={t('insp.notes')} defaultValue={tree.notes} />
 
       {defs.length > 0 ? (
         <section className="mt-1 flex flex-col gap-3 border-t border-hairline pt-3">
-          <h3 className="text-xs font-medium uppercase tracking-wider text-muted">Org fields</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
+            {t('field.orgFields')}
+          </h3>
           {defs.map((def) => (
             <CustomFieldRenderer key={def.id} def={def} defaultValue={tree.customFields?.[def.key]} />
           ))}
@@ -101,10 +105,10 @@ export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Pro
 
       <div className="mt-2 flex items-center justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={pending}>
-          {pending ? 'Saving…' : 'Save inspection'}
+          {pending ? t('common.saving') : t('insp.save')}
         </Button>
       </div>
     </form>

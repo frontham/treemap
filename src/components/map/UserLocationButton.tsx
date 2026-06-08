@@ -6,6 +6,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { LocateIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useMap } from './MapContext';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
 type OrientationPermissionApi = { requestPermission?: () => Promise<'granted' | 'denied'> };
@@ -33,6 +34,7 @@ function markerEl(): HTMLDivElement {
  */
 export function UserLocationButton() {
   const { map } = useMap();
+  const t = useT();
   const [on, setOn] = useState(false);
 
   useEffect(() => {
@@ -116,7 +118,7 @@ export function UserLocationButton() {
 
   return (
     <IconButton
-      label={on ? 'Hide my location' : 'Show my location'}
+      label={on ? t('controls.hideLocation') : t('controls.showLocation')}
       onClick={toggle}
       disabled={!map}
       className={cn('rounded-full text-accent', on && 'bg-paper')}

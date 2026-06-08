@@ -4,6 +4,7 @@ import { type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { formatLngLat } from '@/lib/formatCoord';
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from '@/components/trees/TreeView';
 import { TextField } from './fields/TextField';
 import { NumberField } from './fields/NumberField';
@@ -51,6 +52,7 @@ export function TreeForm({
   onCancel,
   footerLeft,
 }: Props) {
+  const t = useT();
   const { data: defs = [] } = trpc.customFields.list.useQuery();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -58,8 +60,8 @@ export function TreeForm({
     void onSubmit(parseTreeFormValues(new FormData(e.currentTarget), defs));
   };
 
-  const title = mode === 'edit' ? 'Edit tree' : 'New tree';
-  const submitLabel = mode === 'edit' ? 'Save changes' : 'Save';
+  const title = mode === 'edit' ? t('treeForm.editTitle') : t('treeForm.newTitle');
+  const submitLabel = mode === 'edit' ? t('treeForm.saveChanges') : t('common.save');
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col">
@@ -73,47 +75,47 @@ export function TreeForm({
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 pb-5">
         <TextField
           name="commonName"
-          label="Common name"
+          label={t('field.commonName')}
           placeholder="e.g. English oak"
           defaultValue={initial?.commonName}
         />
         <TextField
           name="scientificName"
-          label="Scientific name"
+          label={t('field.scientificName')}
           placeholder="e.g. Quercus robur"
           defaultValue={initial?.scientificName}
         />
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             name="health"
-            label="Health"
+            label={t('field.health')}
             options={HEALTH_OPTIONS}
             defaultValue={initial?.health ?? 'unknown'}
           />
           <SelectField
             name="condition"
-            label="Condition"
+            label={t('field.condition')}
             options={CONDITION_OPTIONS}
             defaultValue={initial?.condition ?? 'unknown'}
           />
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <NumberField name="dbhCm" label="DBH" suffix="cm" defaultValue={initial?.dbhCm} />
-          <NumberField name="heightM" label="Height" suffix="m" defaultValue={initial?.heightM} />
+          <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={initial?.dbhCm} />
+          <NumberField name="heightM" label={t('field.height')} suffix="m" defaultValue={initial?.heightM} />
           <NumberField
             name="estimatedAgeYears"
-            label="Age"
+            label={t('field.age')}
             suffix="yrs"
             defaultValue={initial?.estimatedAgeYears}
           />
         </div>
-        <DateField name="plantedDate" label="Planted" defaultValue={initial?.plantedDate} />
-        <TextareaField name="notes" label="Notes" defaultValue={initial?.notes} />
+        <DateField name="plantedDate" label={t('field.planted')} defaultValue={initial?.plantedDate} />
+        <TextareaField name="notes" label={t('field.notes')} defaultValue={initial?.notes} />
 
         {defs.length > 0 ? (
           <section className="mt-2 flex flex-col gap-3 border-t border-hairline pt-4">
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-              Org fields
+              {t('field.orgFields')}
             </h3>
             {defs.map((def) => (
               <CustomFieldRenderer
@@ -130,7 +132,7 @@ export function TreeForm({
         <div>{footerLeft}</div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit">{submitLabel}</Button>
         </div>

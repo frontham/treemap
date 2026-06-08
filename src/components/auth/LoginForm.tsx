@@ -7,8 +7,10 @@ import { trpc } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { cn } from '@/lib/cn';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 export function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const utils = trpc.useUtils();
   const [email, setEmail] = useState('');
@@ -33,12 +35,14 @@ export function LoginForm() {
       className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-panel p-6 hairline"
     >
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold text-ink">Sign in to TreeMap</h1>
-        <p className="text-sm text-muted">Use your account email and password.</p>
+        <h1 className="text-lg font-semibold text-ink">{t('auth.signin')}</h1>
+        <p className="text-sm text-muted">{t('auth.signinDesc')}</p>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted">Email</span>
+        <span className="text-xs font-medium uppercase tracking-wider text-muted">
+          {t('auth.email')}
+        </span>
         <input
           type="email"
           autoComplete="username"
@@ -50,7 +54,9 @@ export function LoginForm() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted">Password</span>
+        <span className="text-xs font-medium uppercase tracking-wider text-muted">
+          {t('auth.password')}
+        </span>
         <input
           type="password"
           autoComplete="current-password"
@@ -66,7 +72,7 @@ export function LoginForm() {
       )}
 
       <Button type="submit" disabled={login.isPending} className="mt-1">
-        {login.isPending ? 'Signing in…' : 'Sign in'}
+        {login.isPending ? t('auth.signingin') : t('auth.signinButton')}
       </Button>
     </form>
   );

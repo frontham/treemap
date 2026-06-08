@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { PlusIcon, CloseIcon } from '@/components/icons';
 import { useCompose } from './ComposeContext';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Top-right primary action. In idle mode: "+ Tree" starts placement.
@@ -10,6 +11,7 @@ import { useCompose } from './ComposeContext';
  */
 export function AddTreeButton() {
   const { mode, startPlacing, cancel } = useCompose();
+  const t = useT();
   const active = mode !== 'idle';
   return (
     <Button
@@ -18,7 +20,7 @@ export function AddTreeButton() {
       className="rounded-full shadow-floating"
     >
       {active ? <CloseIcon size={14} /> : <PlusIcon size={14} />}
-      {active ? 'Cancel' : 'Tree'}
+      {active ? t('common.cancel') : t('addTree.tree')}
     </Button>
   );
 }

@@ -6,6 +6,7 @@ import type { Route } from 'next';
 import { trpc } from '@/lib/trpc/client';
 import { ChevronDownIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 const chrome =
   'inline-flex h-9 items-center gap-2 rounded-full px-3 bg-panel/85 ' +
@@ -17,6 +18,7 @@ const chrome =
  * middleware). The current project + role come from trpc.auth.me.
  */
 export function ProjectSwitcher() {
+  const t = useT();
   const { data: me } = trpc.auth.me.useQuery();
   const { data: projects = [] } = trpc.projects.list.useQuery(undefined, {
     enabled: !!me?.org,
@@ -40,14 +42,14 @@ export function ProjectSwitcher() {
     <div ref={ref} className="pointer-events-auto relative">
       <button type="button" onClick={() => setOpen((v) => !v)} className={chrome}>
         <span className="inline-block h-2 w-2 rounded-full bg-accent" aria-hidden />
-        <span className="font-medium text-ink">{current?.name ?? 'Select project'}</span>
+        <span className="font-medium text-ink">{current?.name ?? t('projects.selectProject')}</span>
         <ChevronDownIcon size={14} className="text-muted" />
       </button>
 
       {open && orgSlug ? (
         <div className="absolute left-0 mt-1.5 w-60 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <p className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wider text-muted">
-            Projects
+            {t('projects.title')}
           </p>
           {projects.map((p) => (
             <Link
@@ -70,7 +72,7 @@ export function ProjectSwitcher() {
               onClick={() => setOpen(false)}
               className="block px-3 py-2 text-sm text-ink transition-colors hover:bg-panel"
             >
-              Project settings
+              {t('projects.settings')}
             </Link>
           ) : null}
           <Link
@@ -78,7 +80,7 @@ export function ProjectSwitcher() {
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-muted transition-colors hover:bg-panel"
           >
-            All projects…
+            {t('projects.allProjects')}
           </Link>
         </div>
       ) : null}

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import { useTreeMove } from './TreeMoveContext';
 
 /**
@@ -13,6 +14,7 @@ import { useTreeMove } from './TreeMoveContext';
  */
 export function TreeMoveBar() {
   const { movingId, draft, setDraft, cancel } = useTreeMove();
+  const t = useT();
   const utils = trpc.useUtils();
 
   const moveTree = trpc.trees.move.useMutation({
@@ -39,12 +41,12 @@ export function TreeMoveBar() {
   return (
     <div className="pointer-events-auto absolute bottom-6 left-1/2 z-30 w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-xl bg-paper p-3 shadow-floating hairline">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-ink">Move tree</span>
-        <span className="text-xs text-muted">tap the map or drag the marker</span>
+        <span className="text-sm font-medium text-ink">{t('move.title')}</span>
+        <span className="text-xs text-muted">{t('move.hint')}</span>
       </div>
       <div className="mb-3 grid grid-cols-2 gap-2">
         <label className="block">
-          <span className="mb-1 block text-xs text-muted">Latitude</span>
+          <span className="mb-1 block text-xs text-muted">{t('move.lat')}</span>
           <input
             type="number"
             step={0.000001}
@@ -57,7 +59,7 @@ export function TreeMoveBar() {
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-muted">Longitude</span>
+          <span className="mb-1 block text-xs text-muted">{t('move.lng')}</span>
           <input
             type="number"
             step={0.000001}
@@ -72,10 +74,10 @@ export function TreeMoveBar() {
       </div>
       <div className="flex items-center justify-end gap-2">
         <Button type="button" variant="ghost" onClick={() => cancel()}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="button" onClick={save} disabled={moveTree.isPending}>
-          {moveTree.isPending ? 'Saving…' : 'Save location'}
+          {moveTree.isPending ? t('common.saving') : t('move.save')}
         </Button>
       </div>
     </div>

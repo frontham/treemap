@@ -7,9 +7,11 @@ import { trpc } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { useRole } from '@/components/auth/useRole';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /** Rename / delete the active project. Org-admin only. */
 export function ProjectAdminActions() {
+  const t = useT();
   const router = useRouter();
   const utils = trpc.useUtils();
   const { me, isOrgAdmin } = useRole();
@@ -40,23 +42,23 @@ export function ProjectAdminActions() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">Project name</h2>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">
+          {t('projects.name')}
+        </h2>
         <div className="flex gap-2">
           <input className={inputBase} value={name} onChange={(e) => setName(e.target.value)} />
           <Button
             disabled={rename.isPending || !name.trim() || name === current.name}
             onClick={() => rename.mutate({ id: projectId, name: name.trim() })}
           >
-            {rename.isPending ? 'Saving…' : 'Rename'}
+            {rename.isPending ? t('common.saving') : t('projects.rename')}
           </Button>
         </div>
       </div>
 
       <div className="rounded-lg border border-danger/40 p-4">
-        <h2 className="text-sm font-medium text-danger">Danger zone</h2>
-        <p className="mt-1 text-sm text-muted">
-          Deleting this project permanently removes all of its trees, overlays, and fields.
-        </p>
+        <h2 className="text-sm font-medium text-danger">{t('projects.dangerZone')}</h2>
+        <p className="mt-1 text-sm text-muted">{t('projects.deleteDesc')}</p>
         <Button
           variant="danger"
           className="mt-3"
@@ -71,7 +73,7 @@ export function ProjectAdminActions() {
             }
           }}
         >
-          {del.isPending ? 'Deleting…' : 'Delete project'}
+          {del.isPending ? t('projects.deleting') : t('projects.delete')}
         </Button>
       </div>
     </section>

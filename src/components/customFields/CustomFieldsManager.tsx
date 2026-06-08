@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { cn } from '@/lib/cn';
 import { useRole } from '@/components/auth/useRole';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import type { CustomFieldDefView } from '@/server/trpc/routers/customFields';
 
 const TYPES = ['text', 'number', 'boolean', 'select', 'multiselect', 'date'] as const;
@@ -21,25 +22,26 @@ const parseOptions = (s: string) =>
 /** Per-project custom field schema editor. Read-only for non-admins. */
 export function CustomFieldsManager() {
   const { can } = useRole();
+  const t = useT();
   const canEdit = can('admin');
   const utils = trpc.useUtils();
   const { data: fields = [], error, isLoading } = trpc.customFields.list.useQuery();
   const invalidate = () => utils.customFields.list.invalidate();
 
   if (error) {
-    return <p className="text-sm text-muted">You need project-admin access to view fields.</p>;
+    return <p className="text-sm text-muted">{t('cf.noAccess')}</p>;
   }
 
   return (
     <div className="space-y-6">
       <section>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">
-          Fields {fields.length ? `(${fields.length})` : ''}
+          {t('cf.fields')} {fields.length ? `(${fields.length})` : ''}
         </h2>
         {isLoading ? (
-          <p className="text-sm text-muted">Loading…</p>
+          <p className="text-sm text-muted">{t('common.loading')}</p>
         ) : fields.length === 0 ? (
-          <p className="text-sm text-muted">No custom fields for this project yet.</p>
+          <p className="text-sm text-muted">{t('cf.none')}</p>
         ) : (
           <ul className="divide-y divide-hairline rounded-lg bg-panel hairline">
             {fields.map((f) => (
@@ -63,6 +65,7 @@ function FieldRow({
   canEdit: boolean;
   onChanged: () => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(def.label);
   const [required, setRequired] = useState(def.required);
@@ -94,7 +97,7 @@ function FieldRow({
         {canEdit ? (
           <div className="flex shrink-0 items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant="ghost"
@@ -104,7 +107,7 @@ function FieldRow({
                 if (window.confirm(`Archive field "${def.label}"?`)) archive.mutate({ id: def.id });
               }}
             >
-              Archive
+              {t('cf.archive')}
             </Button>
           </div>
         ) : null}
@@ -118,14 +121,14 @@ function FieldRow({
         className={inputBase}
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        placeholder="Label"
+        placeholder={t('cf.label')}
       />
       {showOptions ? (
         <input
           className={inputBase}
           value={optionsText}
           onChange={(e) => setOptionsText(e.target.value)}
-          placeholder="Options (comma separated)"
+          placeholder={t('cf.options')}
         />
       ) : null}
       <div className="flex items-center gap-4">
@@ -136,10 +139,10 @@ function FieldRow({
             onChange={(e) => setRequired(e.target.checked)}
             className="h-4 w-4 rounded border-hairline text-accent focus:ring-accent"
           />
-          Required
+          {t('cf.required')}
         </label>
         <label className="flex items-center gap-2 text-sm text-muted">
-          Order
+          {t('cf.order')}
           <input
             type="number"
             value={order}
@@ -163,10 +166,10 @@ function FieldRow({
             })
           }
         >
-          {update.isPending ? 'Saving…' : 'Save'}
+          {update.isPending ? t('common.saving') : t('common.save')}
         </Button>
         <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </li>
@@ -174,6 +177,7 @@ function FieldRow({
 }
 
 function AddFieldForm({ nextOrder, onChanged }: { nextOrder: number; onChanged: () => void }) {
+  const t = useT();
   const [key, setKey] = useState('');
   const [labelText, setLabelText] = useState('');
   const [type, setType] = useState<FType>('text');
@@ -191,7 +195,9 @@ function AddFieldForm({ nextOrder, onChanged }: { nextOrder: number; onChanged: 
 
   return (
     <section>
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">Add field</h2>
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">
+        {t('cf.addField')}
+      </h2>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -209,14 +215,14 @@ function AddFieldForm({ nextOrder, onChanged }: { nextOrder: number; onChanged: 
         <input
           className={inputBase}
           required
-          placeholder="key (a-z, 0-9, _)"
+          placeholder={t('cf.key')}
           value={key}
           onChange={(e) => setKey(e.target.value)}
         />
         <input
           className={inputBase}
           required
-          placeholder="Label"
+          placeholder={t('cf.label')}
           value={labelText}
           onChange={(e) => setLabelText(e.target.value)}
         />
@@ -234,7 +240,7 @@ function AddFieldForm({ nextOrder, onChanged }: { nextOrder: number; onChanged: 
         {showOptions ? (
           <input
             className={inputBase}
-            placeholder="Options (comma separated)"
+            placeholder={t('cf.options')}
             value={optionsText}
             onChange={(e) => setOptionsText(e.target.value)}
           />
@@ -246,7 +252,7 @@ function AddFieldForm({ nextOrder, onChanged }: { nextOrder: number; onChanged: 
         ) : null}
         <div className="sm:col-span-2">
           <Button type="submit" disabled={create.isPending}>
-            {create.isPending ? 'Adding…' : 'Add field'}
+            {create.isPending ? t('cf.adding') : t('cf.addField')}
           </Button>
         </div>
       </form>

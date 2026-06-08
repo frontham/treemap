@@ -1,6 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import type { RevisionView } from '@/server/trpc/routers/trees';
 
 const FIELD_LABELS: Record<string, string> = {
@@ -30,13 +31,6 @@ const HIDDEN = new Set([
   'deleted_at',
 ]);
 
-const OP_LABEL: Record<RevisionView['operation'], string> = {
-  create: 'Created',
-  update: 'Edited',
-  delete: 'Deleted',
-  restore: 'Restored',
-};
-
 function fmt(v: unknown): string {
   if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'object') return JSON.stringify(v);
@@ -45,9 +39,10 @@ function fmt(v: unknown): string {
 
 /** The field-level changes for an 'update' revision. */
 function Changes({ diff }: { diff: Record<string, unknown> }) {
+  const t = useT();
   const entries = Object.entries(diff).filter(([k]) => !HIDDEN.has(k));
   if (entries.length === 0) {
-    return <p className="text-xs text-muted">No field changes.</p>;
+    return <p className="text-xs text-muted">{t('history.noChanges')}</p>;
   }
   return (
     <ul className="flex flex-col gap-1 text-xs">
@@ -84,10 +79,11 @@ function Changes({ diff }: { diff: Record<string, unknown> }) {
 
 /** History tab: the change log for a tree, newest first. */
 export function TreeHistory({ treeId }: { treeId: string }) {
+  const t = useT();
   const { data: revisions = [], isLoading } = trpc.trees.history.useQuery({ id: treeId });
 
-  if (isLoading) return <p className="text-sm text-muted">Loading history…</p>;
-  if (revisions.length === 0) return <p className="text-sm text-muted">No history yet.</p>;
+  if (isLoading) return <p className="text-sm text-muted">{t('history.loading')}</p>;
+  if (revisions.length === 0) return <p className="text-sm text-muted">{t('history.empty')}</p>;
 
   return (
     <ol className="flex flex-col gap-3">
@@ -95,7 +91,7 @@ export function TreeHistory({ treeId }: { treeId: string }) {
         <li key={r.id} className="rounded-lg p-3 hairline bg-panel/40">
           <div className="mb-1 flex items-center justify-between gap-2">
             <span className="text-xs font-medium uppercase tracking-wider text-accent">
-              {OP_LABEL[r.operation]}
+              {t(`history.op.${r.operation}`)}
             </span>
             <time className="text-xs text-muted">
               {new Date(r.changedAt).toLocaleString()}

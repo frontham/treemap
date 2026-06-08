@@ -7,6 +7,7 @@ import { UserLocationButton } from '@/components/map/UserLocationButton';
 import { BasemapSwitcher } from '@/components/map/BasemapSwitcher';
 import { LayersPanel } from '@/components/overlays/LayersPanel';
 import { cn } from '@/lib/cn';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Bottom-right floating cluster: layers, filters, basemap, my-location.
@@ -14,6 +15,7 @@ import { cn } from '@/lib/cn';
  */
 export function FloatingControlCluster() {
   const [layersOpen, setLayersOpen] = useState(false);
+  const t = useT();
 
   return (
     <>
@@ -21,13 +23,13 @@ export function FloatingControlCluster() {
       <div className="pointer-events-none absolute bottom-4 right-3 z-20">
         <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-panel/85 backdrop-blur-md hairline shadow-floating p-1">
           <IconButton
-            label="Layers"
+            label={t('controls.layers')}
             onClick={() => setLayersOpen((v) => !v)}
             className={cn('rounded-full', layersOpen && 'bg-paper text-accent')}
           >
             <LayersIcon size={16} />
           </IconButton>
-          <IconButton label="Filters" className="rounded-full">
+          <IconButton label={t('controls.filters')} className="rounded-full">
             <FiltersIcon size={16} />
           </IconButton>
           <BasemapSwitcher />

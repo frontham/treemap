@@ -9,6 +9,7 @@ import { PendingIndicator } from './PendingIndicator';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { UserMenu } from './UserMenu';
 import { useRole } from '@/components/auth/useRole';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Top floating chrome: project switcher + search on the left; data, editor-only
@@ -17,6 +18,7 @@ import { useRole } from '@/components/auth/useRole';
  */
 export function FloatingTopBar() {
   const { can } = useRole();
+  const t = useT();
   const canEdit = can('editor');
 
   return (
@@ -26,8 +28,8 @@ export function FloatingTopBar() {
         <Pill className="hidden sm:inline-flex">
           <SearchIcon size={14} className="text-muted" />
           <input
-            aria-label="Search trees"
-            placeholder="Search trees…"
+            aria-label={t('search.placeholder')}
+            placeholder={t('search.placeholder')}
             className="w-40 bg-transparent text-sm placeholder:text-muted focus:outline-none"
           />
         </Pill>

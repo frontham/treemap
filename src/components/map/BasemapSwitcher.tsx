@@ -14,6 +14,7 @@ import {
 import { IconButton } from '@/components/ui/IconButton';
 import { MapIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Basemap switcher in the floating control cluster. Swaps the MapLibre base
@@ -23,6 +24,7 @@ import { cn } from '@/lib/cn';
  */
 export function BasemapSwitcher() {
   const { map } = useMap();
+  const t = useT();
   const [id, setId] = useState<BasemapId>(() => readStoredBasemapId());
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -51,7 +53,7 @@ export function BasemapSwitcher() {
   return (
     <div className="relative" ref={ref}>
       <IconButton
-        label="Base map"
+        label={t('controls.basemap')}
         onClick={() => setOpen((v) => !v)}
         className={cn('rounded-full', open && 'bg-paper text-accent')}
       >
@@ -61,7 +63,7 @@ export function BasemapSwitcher() {
       {open ? (
         <div className="absolute bottom-full right-0 mb-2 max-h-[60vh] w-60 overflow-y-auto rounded-lg bg-paper hairline shadow-floating">
           <div className="sticky top-0 border-b border-hairline bg-paper px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted">
-            Base map
+            {t('controls.basemap')}
           </div>
           {BASEMAPS.map((b) => (
             <button

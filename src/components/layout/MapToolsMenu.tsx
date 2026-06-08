@@ -6,6 +6,7 @@ import { ChevronDownIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useRole } from '@/components/auth/useRole';
 import { useAlign, type CalibrateTool } from '@/components/map/AlignContext';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Top-bar dropdown that opens the map alignment tools (one at a time):
@@ -18,6 +19,7 @@ export function MapToolsMenu() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { can } = useRole();
   const { tool, setTool } = useAlign();
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -43,23 +45,23 @@ export function MapToolsMenu() {
         onClick={() => setOpen((v) => !v)}
         className={cn('rounded-full shadow-floating', (open || tool !== 'none') && 'bg-paper')}
       >
-        Tools
+        {t('tools.menu')}
         <ChevronDownIcon size={14} className="text-muted" />
       </Button>
 
       {open ? (
         <div className="absolute right-0 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <MenuButton active={tool === 'reference'} onClick={() => pick('reference')}>
-            Reference image
+            {t('tools.reference')}
           </MenuButton>
           {can('admin') ? (
             <>
               <div className="h-px bg-hairline" />
               <MenuButton active={tool === 'sliders'} onClick={() => pick('sliders')}>
-                Calibrate (sliders)
+                {t('tools.calibrate')}
               </MenuButton>
               <MenuButton active={tool === 'points'} onClick={() => pick('points')}>
-                Align by dragging pins
+                {t('tools.alignDrag')}
               </MenuButton>
             </>
           ) : null}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { PlusIcon } from '@/components/icons';
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from './TreeView';
 import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
 
@@ -27,6 +28,7 @@ type Props = { treeId: string; tree: TreeView; canEdit: boolean };
 
 /** Inspections tab: dated assessment log + a "New inspection" form. */
 export function TreeInspections({ treeId, tree, canEdit }: Props) {
+  const t = useT();
   const [mode, setMode] = useState<'list' | 'new'>('list');
   const utils = trpc.useUtils();
   const today = new Date().toISOString().slice(0, 10);
@@ -60,14 +62,14 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
       {canEdit ? (
         <Button size="sm" variant="secondary" onClick={() => setMode('new')} className="self-start">
           <PlusIcon size={14} />
-          New inspection
+          {t('insp.new')}
         </Button>
       ) : null}
 
       {isLoading ? (
-        <p className="text-sm text-muted">Loading inspections…</p>
+        <p className="text-sm text-muted">{t('insp.loading')}</p>
       ) : inspections.length === 0 ? (
-        <p className="text-sm text-muted">No inspections yet.</p>
+        <p className="text-sm text-muted">{t('insp.empty')}</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {inspections.map((i) => (
@@ -77,12 +79,13 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
                   {new Date(i.inspectedOn).toLocaleDateString()}
                 </time>
                 <span className="truncate text-xs text-muted">
-                  {i.inspectorName || i.inspectorEmail || 'Unknown'}
+                  {i.userName || i.inspectorName || i.userEmail || 'Unknown'}
                 </span>
               </div>
               <p className="text-xs text-muted">
-                Health: <span className="text-ink">{HEALTH_LABEL[i.health] ?? i.health}</span> ·
-                Condition:{' '}
+                {t('insp.health')}:{' '}
+                <span className="text-ink">{HEALTH_LABEL[i.health] ?? i.health}</span> ·{' '}
+                {t('insp.condition')}:{' '}
                 <span className="text-ink">{CONDITION_LABEL[i.condition] ?? i.condition}</span>
               </p>
               {i.notes ? <p className="mt-1 text-xs text-ink">{i.notes}</p> : null}

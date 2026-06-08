@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { OrgMembersManager } from '@/components/members/OrgMembersManager';
+import { getServerT } from '@/lib/i18n/server';
 
 export default async function MembersPage({
   params,
@@ -8,13 +9,14 @@ export default async function MembersPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const t = await getServerT();
   return (
     <main className="min-h-screen bg-paper px-6 py-10">
       <div className="mx-auto mb-6 w-full max-w-2xl">
         <Link href={`/orgs/${slug}` as Route} className="text-sm text-accent hover:underline">
-          ← Projects
+          {t('members.projectsLink')}
         </Link>
-        <h1 className="mt-2 text-xl font-semibold text-ink">Organization members</h1>
+        <h1 className="mt-2 text-xl font-semibold text-ink">{t('members.orgMembers')}</h1>
       </div>
       <OrgMembersManager />
     </main>

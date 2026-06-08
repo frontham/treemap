@@ -8,12 +8,17 @@ import { trpc } from '@/lib/trpc/client';
 import { IconButton } from '@/components/ui/IconButton';
 import { UserIcon } from '@/components/icons';
 import { useRole } from '@/components/auth/useRole';
+import { cn } from '@/lib/cn';
+import { useLocale, useT } from '@/lib/i18n/LocaleProvider';
+import { LOCALES, LOCALE_LABELS } from '@/lib/i18n/config';
 
 /** Account button → dropdown with the signed-in user, members link, and logout. */
 export function UserMenu() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { me, isOrgAdmin } = useRole();
+  const t = useT();
+  const { locale, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,7 +54,9 @@ export function UserMenu() {
       {open ? (
         <div className="absolute right-0 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <div className="px-3 py-2">
-            <p className="truncate text-sm font-medium text-ink">{me?.user?.name ?? 'Account'}</p>
+            <p className="truncate text-sm font-medium text-ink">
+              {me?.user?.name ?? t('account.title')}
+            </p>
             <p className="truncate text-xs text-muted">{me?.user?.email}</p>
           </div>
           <div className="h-px bg-hairline" />
@@ -59,16 +66,38 @@ export function UserMenu() {
               onClick={() => setOpen(false)}
               className="block px-3 py-2 text-sm text-ink transition-colors hover:bg-panel"
             >
-              Manage members
+              {t('account.members')}
             </Link>
           ) : null}
+
+          <div className="h-px bg-hairline" />
+          <div className="px-3 py-2">
+            <p className="mb-1.5 text-xs text-muted">{t('account.language')}</p>
+            <div className="grid grid-cols-2 gap-1 rounded bg-panel p-0.5 hairline">
+              {LOCALES.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLocale(l)}
+                  className={cn(
+                    'rounded px-2 py-1 text-xs transition-colors',
+                    locale === l ? 'bg-paper font-medium text-ink' : 'text-muted hover:text-ink',
+                  )}
+                >
+                  {LOCALE_LABELS[l]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-px bg-hairline" />
+
           <button
             type="button"
             onClick={() => logout.mutate()}
             disabled={logout.isPending}
             className="block w-full px-3 py-2 text-left text-sm text-ink transition-colors hover:bg-panel"
           >
-            {logout.isPending ? 'Signing out…' : 'Sign out'}
+            {logout.isPending ? t('account.signingout') : t('account.signout')}
           </button>
         </div>
       ) : null}

@@ -7,6 +7,7 @@ import { useSelection } from '@/components/map/SelectionContext';
 import { useTreeMove } from '@/components/map/TreeMoveContext';
 import { trpc } from '@/lib/trpc/client';
 import { cn } from '@/lib/cn';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import { TreeForm } from '@/components/forms/TreeForm';
 import type { TreeFormValues } from '@/components/forms/parseTreeFormData';
 import { TreeDetailHeader } from './TreeDetailHeader';
@@ -30,6 +31,7 @@ export function TreeDetailDrawer() {
   const move = useTreeMove();
   const [editing, setEditing] = useState(false);
   const { can } = useRole();
+  const t = useT();
   const canEdit = can('editor');
   const isMoving = !!selectedId && move.movingId === selectedId;
   const [tab, setTab] = useState<'details' | 'history' | 'inspections'>('details');
@@ -111,17 +113,17 @@ export function TreeDetailDrawer() {
           />
 
           <div className="mb-4 mt-3 grid grid-cols-3 gap-1 rounded-lg bg-paper p-0.5 hairline">
-            {(['details', 'history', 'inspections'] as const).map((t) => (
+            {(['details', 'history', 'inspections'] as const).map((key) => (
               <button
-                key={t}
+                key={key}
                 type="button"
-                onClick={() => setTab(t)}
+                onClick={() => setTab(key)}
                 className={cn(
-                  'rounded px-2 py-1 text-xs capitalize transition-colors',
-                  tab === t ? 'bg-panel font-medium text-ink' : 'text-muted hover:text-ink',
+                  'rounded px-2 py-1 text-xs transition-colors',
+                  tab === key ? 'bg-panel font-medium text-ink' : 'text-muted hover:text-ink',
                 )}
               >
-                {t}
+                {t(`tree.tab.${key}`)}
               </button>
             ))}
           </div>

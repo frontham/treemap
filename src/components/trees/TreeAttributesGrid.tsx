@@ -1,5 +1,6 @@
 import { cn } from '@/lib/cn';
 import { formatLngLat } from '@/lib/formatCoord';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from './TreeView';
 
 type Props = { tree: TreeView };
@@ -13,23 +14,28 @@ const HEALTH_COLOR: Record<string, string> = {
 };
 
 export function TreeAttributesGrid({ tree }: Props) {
+  const t = useT();
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-      <Row label="ID" value={tree.id} mono />
+      <Row label={t('field.id')} value={tree.id} mono />
       <Row
-        label="Health"
+        label={t('field.health')}
         value={tree.health}
         dotClass={tree.health ? HEALTH_COLOR[tree.health] : undefined}
       />
-      <Row label="DBH" value={tree.dbhCm != null ? `${tree.dbhCm} cm` : undefined} mono />
-      <Row label="Height" value={tree.heightM != null ? `${tree.heightM} m` : undefined} mono />
+      <Row label={t('field.dbh')} value={tree.dbhCm != null ? `${tree.dbhCm} cm` : undefined} mono />
       <Row
-        label="Age"
+        label={t('field.height')}
+        value={tree.heightM != null ? `${tree.heightM} m` : undefined}
+        mono
+      />
+      <Row
+        label={t('field.age')}
         value={tree.estimatedAgeYears != null ? `~${tree.estimatedAgeYears} yrs` : undefined}
         mono
       />
-      <Row label="Planted" value={tree.plantedDate} mono />
-      <Row label="Location" value={formatLngLat(tree.location.lng, tree.location.lat)} mono />
+      <Row label={t('field.planted')} value={tree.plantedDate} mono />
+      <Row label={t('field.location')} value={formatLngLat(tree.location.lng, tree.location.lat)} mono />
     </dl>
   );
 }
