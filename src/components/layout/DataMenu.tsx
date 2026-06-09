@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ChevronDownIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useRole } from '@/components/auth/useRole';
 import { useT } from '@/lib/i18n/LocaleProvider';
-import { ImportMappingDialog, type ImportSource } from '@/components/imports/ImportMappingDialog';
+import { useImport } from '@/components/imports/useImport';
 
 /**
  * Dropdown in the top bar for data actions.
@@ -16,13 +16,11 @@ import { ImportMappingDialog, type ImportSource } from '@/components/imports/Imp
 export function DataMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const geojsonInputRef = useRef<HTMLInputElement>(null);
-  const csvInputRef = useRef<HTMLInputElement>(null);
 
   const { can } = useRole();
   const t = useT();
   const canImport = can('editor');
-  const [importSource, setImportSource] = useState<ImportSource | null>(null);
+  const { openGeoJson, openCsv, importUi } = useImport();
 
   useEffect(() => {
     if (!open) return;
@@ -32,34 +30,6 @@ export function DataMenu() {
     window.addEventListener('mousedown', onClick);
     return () => window.removeEventListener('mousedown', onClick);
   }, [open]);
-
-  const handleGeoJsonFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setOpen(false);
-    try {
-      const json = JSON.parse(await file.text()) as { features?: unknown };
-      const features = Array.isArray(json.features) ? json.features : [json];
-      const keys = new Set<string>();
-      for (const f of features) {
-        const props = (f as { properties?: Record<string, unknown> } | null)?.properties;
-        if (props) for (const k of Object.keys(props)) keys.add(k);
-      }
-      setImportSource({ kind: 'geojson', features, columns: [...keys] });
-    } catch (err) {
-      window.alert(`Couldn't parse GeoJSON: ${(err as Error).message}`);
-    }
-  };
-
-  const handleCsvFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setOpen(false);
-    const csv = await file.text();
-    setImportSource({ kind: 'csv', csv, columns: parseCsvHeader(csv) });
-  };
 
   return (
     <div className="relative" ref={rootRef}>
@@ -74,7 +44,7 @@ export function DataMenu() {
       </Button>
 
       {open ? (
-        <div className="absolute right-0 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
+        <div className="absolute right-0 z-30 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
           <MenuLink href="/api/exports/trees.geojson" download>
             {t('data.exportGeojson')}
           </MenuLink>
@@ -84,10 +54,20 @@ export function DataMenu() {
           {canImport ? (
             <>
               <div className="h-px bg-hairline" />
-              <MenuButton onClick={() => geojsonInputRef.current?.click()}>
+              <MenuButton
+                onClick={() => {
+                  setOpen(false);
+                  openGeoJson();
+                }}
+              >
                 {t('data.importGeojson')}
               </MenuButton>
-              <MenuButton onClick={() => csvInputRef.current?.click()}>
+              <MenuButton
+                onClick={() => {
+                  setOpen(false);
+                  openCsv();
+                }}
+              >
                 {t('data.importCsv')}
               </MenuButton>
             </>
@@ -95,24 +75,7 @@ export function DataMenu() {
         </div>
       ) : null}
 
-      <input
-        ref={geojsonInputRef}
-        type="file"
-        accept=".geojson,.json,application/geo+json,application/json"
-        className="hidden"
-        onChange={handleGeoJsonFile}
-      />
-      <input
-        ref={csvInputRef}
-        type="file"
-        accept=".csv,text/csv"
-        className="hidden"
-        onChange={handleCsvFile}
-      />
-
-      {importSource ? (
-        <ImportMappingDialog source={importSource} onClose={() => setImportSource(null)} />
-      ) : null}
+      {importUi}
     </div>
   );
 }
@@ -147,12 +110,4 @@ function MenuButton({
       {children}
     </button>
   );
-}
-
-function parseCsvHeader(csv: string): string[] {
-  const first = csv.split(/\r?\n/, 1)[0] ?? '';
-  return first
-    .split(',')
-    .map((h) => h.trim().replace(/^"|"$/g, ''))
-    .filter(Boolean);
 }

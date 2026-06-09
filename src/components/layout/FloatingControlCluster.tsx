@@ -20,7 +20,8 @@ export function FloatingControlCluster() {
   return (
     <>
       {layersOpen ? <LayersPanel /> : null}
-      <div className="pointer-events-none absolute bottom-4 right-3 z-20">
+      {/* Desktop only — on mobile these controls live in the top "..." menu. */}
+      <div className="pointer-events-none absolute bottom-4 right-3 z-20 hidden sm:block">
         <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-panel/85 backdrop-blur-md hairline shadow-floating p-1">
           <IconButton
             label={t('controls.layers')}

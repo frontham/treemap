@@ -75,6 +75,11 @@ export function TreeForm({
           placeholder="e.g. Quercus robur"
           defaultValue={initial?.scientificName}
         />
+        {mode === 'edit' ? (
+          <p className="rounded-md bg-panel/60 px-3 py-2 text-xs text-muted hairline">
+            {t('treeForm.assessmentHint')}
+          </p>
+        ) : null}
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             name="health"

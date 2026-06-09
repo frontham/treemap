@@ -86,6 +86,7 @@ type TreeDetailRow = {
   custom_fields: Record<string, unknown> | null;
   lng: number;
   lat: number;
+  last_inspected_on: string | Date | null;
 };
 
 function formatDateOnly(value: string | Date | null): string | undefined {
@@ -153,15 +154,17 @@ export const treesRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }): Promise<TreeView> => {
       const result = await ctx.tx.execute(sql`
-        SELECT id, common_name, scientific_name, health, condition,
-               risk, next_inspection_on, tree_no,
-               dbh_cm, height_m, canopy_radius_m, estimated_age_years,
-               planted_date, notes, location_accuracy_m, custom_fields,
-               ST_X(location::geometry) AS lng,
-               ST_Y(location::geometry) AS lat
-        FROM trees
-        WHERE id = ${input.id} AND deleted_at IS NULL
-          AND (current_project_id() IS NULL OR project_id = current_project_id())
+        SELECT t.id, t.common_name, t.scientific_name, t.health, t.condition,
+               t.risk, t.next_inspection_on, t.tree_no,
+               t.dbh_cm, t.height_m, t.canopy_radius_m, t.estimated_age_years,
+               t.planted_date, t.notes, t.location_accuracy_m, t.custom_fields,
+               ST_X(t.location::geometry) AS lng,
+               ST_Y(t.location::geometry) AS lat,
+               (SELECT max(i.inspected_on) FROM tree_inspections i WHERE i.tree_id = t.id)
+                 AS last_inspected_on
+        FROM trees t
+        WHERE t.id = ${input.id} AND t.deleted_at IS NULL
+          AND (current_project_id() IS NULL OR t.project_id = current_project_id())
       `);
       const row = result.rows[0] as TreeDetailRow | undefined;
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
@@ -182,6 +185,7 @@ export const treesRouter = router({
         notes: row.notes ?? undefined,
         customFields: row.custom_fields ?? {},
         location: { lng: Number(row.lng), lat: Number(row.lat) },
+        lastInspectedOn: formatDateOnly(row.last_inspected_on),
         photos: [],
       };
     }),

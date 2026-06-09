@@ -5,6 +5,7 @@ import { SearchIcon } from '@/components/icons';
 import { AddTreeButton } from '@/components/map/AddTreeButton';
 import { DataMenu } from './DataMenu';
 import { MapToolsMenu } from './MapToolsMenu';
+import { MobileMenu } from './MobileMenu';
 import { PendingIndicator } from './PendingIndicator';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { UserMenu } from './UserMenu';
@@ -37,10 +38,20 @@ export function FloatingTopBar() {
 
       <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
         <PendingIndicator />
-        <DataMenu />
-        {canEdit ? <MapToolsMenu /> : null}
+        {/* Desktop: each control on the bar. */}
+        <div className="hidden items-center gap-2 sm:flex">
+          <DataMenu />
+          {canEdit ? <MapToolsMenu /> : null}
+        </div>
+        {/* +Tree stays prominent on every size. */}
         {canEdit ? <AddTreeButton /> : null}
-        <UserMenu />
+        <div className="hidden sm:block">
+          <UserMenu />
+        </div>
+        {/* Mobile: everything else folds into one menu. */}
+        <div className="sm:hidden">
+          <MobileMenu />
+        </div>
       </div>
     </div>
   );

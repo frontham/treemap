@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router } from '../init';
 import { projectProcedure } from '../projectProcedure';
@@ -31,8 +31,7 @@ export type InspectionView = {
   userEmail: string | null;
 };
 
-const InspectionInput = z.object({
-  treeId: z.string().uuid(),
+const InspectionFields = {
   inspectedOn: z.string(), // YYYY-MM-DD
   health: HealthEnum,
   condition: ConditionEnum,
@@ -42,7 +41,43 @@ const InspectionInput = z.object({
   estimatedAgeYears: z.number().optional(),
   notes: z.string().optional(),
   customFields: z.record(z.string(), z.unknown()).optional(),
-});
+};
+
+const InspectionInput = z.object({ treeId: z.string().uuid(), ...InspectionFields });
+const UpdateInspectionInput = z.object({ id: z.string().uuid(), ...InspectionFields });
+
+/**
+ * Re-derive a tree's current condition fields from its newest inspection (by
+ * date, then recency). The tree always mirrors the latest assessment, so this
+ * runs after any inspection is created, edited, or deleted. If no inspections
+ * remain the tree's current values are left untouched (the subquery yields no
+ * row, so the UPDATE matches nothing). The audit trigger logs it to history.
+ */
+function syncTreeFromLatestInspection(treeId: string): SQL {
+  return sql`
+    UPDATE trees tr SET
+      health              = li.health,
+      condition           = li.condition,
+      dbh_cm              = li.dbh_cm,
+      height_m            = li.height_m,
+      canopy_radius_m     = li.canopy_radius_m,
+      estimated_age_years = li.estimated_age_years,
+      notes               = li.notes,
+      custom_fields       = li.custom_fields,
+      updated_by          = current_user_id(),
+      updated_at          = now()
+    FROM (
+      SELECT health, condition, dbh_cm, height_m, canopy_radius_m,
+             estimated_age_years, notes, custom_fields
+      FROM tree_inspections
+      WHERE tree_id = ${treeId}
+      ORDER BY inspected_on DESC, created_at DESC
+      LIMIT 1
+    ) li
+    WHERE tr.id = ${treeId} AND tr.deleted_at IS NULL
+      AND (current_project_id() IS NULL OR tr.project_id = current_project_id())
+  `;
+}
 
 export const inspectionsRouter = router({
   list: projectProcedure
@@ -89,10 +124,19 @@ export const inspectionsRouter = router({
     const row = ins.rows[0] as { id: string } | undefined;
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
 
-    // The latest inspection is the current assessment, so reflect its values on
-    // the tree (the audit trigger records this as a normal edit in history).
-    await ctx.tx.execute(sql`
-      UPDATE trees SET
+    // The newest inspection is the current assessment, so reflect it on the tree.
+    await ctx.tx.execute(syncTreeFromLatestInspection(input.treeId));
+
+    return { id: row.id };
+  }),
+
+  /** Edit any inspection in the active project. Import metadata (inspector_name,
+   *  external_ref) and the original recorder (inspected_by) are preserved. */
+  update: editorProcedure.input(UpdateInspectionInput).mutation(async ({ ctx, input }) => {
+    const cf = JSON.stringify(input.customFields ?? {});
+    const upd = await ctx.tx.execute(sql`
+      UPDATE tree_inspections SET
+        inspected_on        = ${input.inspectedOn}::date,
         health              = ${input.health}::tree_health,
         condition           = ${input.condition}::tree_condition,
         dbh_cm              = ${input.dbhCm ?? null},
@@ -100,15 +144,38 @@ export const inspectionsRouter = router({
         canopy_radius_m     = ${input.canopyRadiusM ?? null},
         estimated_age_years = ${input.estimatedAgeYears ?? null},
         notes               = ${input.notes ?? null},
-        custom_fields       = ${cf}::jsonb,
-        updated_by          = current_user_id(),
-        updated_at          = now()
-      WHERE id = ${input.treeId} AND deleted_at IS NULL
+        custom_fields       = ${cf}::jsonb
+      WHERE id = ${input.id}
         AND (current_project_id() IS NULL OR project_id = current_project_id())
+      RETURNING tree_id
     `);
+    const row = upd.rows[0] as { tree_id: string } | undefined;
+    if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
 
-    return { id: row.id };
+    // The edit may have changed which inspection is current (e.g. a new date).
+    await ctx.tx.execute(syncTreeFromLatestInspection(row.tree_id));
+
+    return { id: input.id, treeId: row.tree_id };
   }),
+
+  /** Delete any inspection in the active project (hard delete — inspections are
+   *  a log, not soft-deletable). The tree falls back to the next-latest. */
+  delete: editorProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const del = await ctx.tx.execute(sql`
+        DELETE FROM tree_inspections
+        WHERE id = ${input.id}
+          AND (current_project_id() IS NULL OR project_id = current_project_id())
+        RETURNING tree_id
+      `);
+      const row = del.rows[0] as { tree_id: string } | undefined;
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      await ctx.tx.execute(syncTreeFromLatestInspection(row.tree_id));
+
+      return { ok: true, treeId: row.tree_id };
+    }),
 
   /** The project's custom-field → inspection mapping. */
   mapping: projectProcedure.query(async ({ ctx }): Promise<InspectionMapping> => {
