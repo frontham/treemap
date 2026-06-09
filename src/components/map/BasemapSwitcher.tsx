@@ -22,7 +22,7 @@ import { useT } from '@/lib/i18n/LocaleProvider';
  * `carryAppLayers` (setStyle would otherwise wipe everything on top). The
  * choice is remembered in localStorage and applied on the next load.
  */
-export function BasemapSwitcher() {
+export function BasemapSwitcher({ onActivate }: { onActivate?: () => void }) {
   const { map } = useMap();
   const t = useT();
   const [id, setId] = useState<BasemapId>(() => readStoredBasemapId());
@@ -54,7 +54,10 @@ export function BasemapSwitcher() {
     <div className="relative" ref={ref}>
       <IconButton
         label={t('controls.basemap')}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open) onActivate?.(); // close any open layers/filters card on open
+          setOpen((v) => !v);
+        }}
         className={cn('rounded-full', open && 'bg-paper text-accent')}
       >
         <MapIcon size={16} />

@@ -2,11 +2,13 @@
 
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { PinColorControl } from '@/components/map/PinColorControl';
+import { DeadTreesControl } from '@/components/map/DeadTreesControl';
 import { OverlayRow } from './OverlayRow';
 
 /**
- * Floating card with one row per overlay. Anchored above the floating control
- * cluster; rendered/hidden by the cluster's open state.
+ * Floating card with the pin-colour + dead-tree display controls plus one row
+ * per overlay. Anchored above the floating control cluster; shown/hidden by it.
  */
 export function LayersPanel() {
   const t = useT();
@@ -14,6 +16,12 @@ export function LayersPanel() {
 
   return (
     <div className="pointer-events-auto absolute bottom-16 right-3 z-30 w-80 rounded-lg bg-panel/95 backdrop-blur-md hairline shadow-floating">
+      <div className="border-b border-hairline p-3">
+        <PinColorControl />
+      </div>
+      <div className="border-b border-hairline p-3">
+        <DeadTreesControl />
+      </div>
       <div className="border-b border-hairline px-3 py-2">
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
           {t('layers.overlays')}

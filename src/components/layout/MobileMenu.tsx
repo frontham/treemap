@@ -17,6 +17,9 @@ import {
   type BasemapId,
 } from '@/components/map/basemaps';
 import { UserLocationButton } from '@/components/map/UserLocationButton';
+import { PinColorControl } from '@/components/map/PinColorControl';
+import { DeadTreesControl } from '@/components/map/DeadTreesControl';
+import { TreeFilterControl } from '@/components/map/TreeFilterControl';
 import { useAlign, type CalibrateTool } from '@/components/map/AlignContext';
 import { OverlayRow } from '@/components/overlays/OverlayRow';
 import { useImport } from '@/components/imports/useImport';
@@ -108,8 +111,20 @@ export function MobileMenu() {
           <div className="absolute right-0 mt-1.5 max-h-[70vh] w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto overflow-x-hidden rounded-lg bg-paper hairline shadow-floating">
             {view === 'layers' ? (
               <>
-                <BackHeader label={t('layers.overlays')} onBack={() => setView('root')} />
-                <div className="flex flex-col gap-1.5 p-2">
+                <BackHeader label={t('controls.layers')} onBack={() => setView('root')} />
+                <div className="border-b border-hairline p-3">
+                  <PinColorControl />
+                </div>
+                <div className="border-b border-hairline p-3">
+                  <DeadTreesControl />
+                </div>
+                <div className="border-b border-hairline p-3">
+                  <TreeFilterControl />
+                </div>
+                <div className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wider text-muted">
+                  {t('layers.overlays')}
+                </div>
+                <div className="flex flex-col gap-1.5 p-2 pt-1">
                   {overlays.length === 0 ? (
                     <p className="px-1.5 py-3 text-center text-xs text-muted">{t('layers.empty')}</p>
                   ) : (

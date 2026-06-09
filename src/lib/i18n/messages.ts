@@ -21,6 +21,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'account.language': 'Language',
 
     'search.placeholder': 'Search trees…',
+    'search.noResults': 'No matching trees',
 
     'data.menu': 'Data',
     'data.exportGeojson': 'Export as GeoJSON',
@@ -50,6 +51,16 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'layers.overlays': 'Overlays',
     'layers.empty': 'No overlays yet. Add one with Tools → Reference image.',
+
+    'pinColor.label': 'Colour pins by',
+    'pinColor.none': 'None',
+
+    'deadTrees.label': 'Dead trees',
+    'deadTrees.show': 'Show',
+    'deadTrees.dim': 'Dim',
+    'deadTrees.hide': 'Hide',
+
+    'filters.reset': 'Reset',
 
     'tree.tab.details': 'Details',
     'tree.tab.history': 'History',
@@ -216,6 +227,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'account.language': 'Taal',
 
     'search.placeholder': 'Bomen zoeken…',
+    'search.noResults': 'Geen bomen gevonden',
 
     'data.menu': 'Gegevens',
     'data.exportGeojson': 'Exporteren als GeoJSON',
@@ -245,6 +257,16 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'layers.overlays': 'Lagen',
     'layers.empty': 'Nog geen lagen. Voeg er een toe via Gereedschap → Referentieafbeelding.',
+
+    'pinColor.label': 'Pins kleuren op',
+    'pinColor.none': 'Geen',
+
+    'deadTrees.label': 'Dode bomen',
+    'deadTrees.show': 'Tonen',
+    'deadTrees.dim': 'Vervagen',
+    'deadTrees.hide': 'Verbergen',
+
+    'filters.reset': 'Wissen',
 
     'tree.tab.details': 'Gegevens',
     'tree.tab.history': 'Geschiedenis',

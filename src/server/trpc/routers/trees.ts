@@ -63,6 +63,9 @@ type TreeListRow = {
   common_name: string | null;
   scientific_name: string | null;
   health: string;
+  condition: string;
+  risk: string;
+  tree_no: number | null;
   lng: number;
   lat: number;
 };
@@ -123,7 +126,7 @@ export type RevisionView = {
 export const treesRouter = router({
   list: projectProcedure.query(async ({ ctx }) => {
     const result = await ctx.tx.execute(sql`
-      SELECT id, common_name, scientific_name, health,
+      SELECT id, common_name, scientific_name, health, condition, risk, tree_no,
              ST_X(location::geometry) AS lng,
              ST_Y(location::geometry) AS lat
       FROM trees
@@ -145,6 +148,9 @@ export const treesRouter = router({
           commonName: r.common_name,
           scientificName: r.scientific_name,
           health: r.health,
+          condition: r.condition,
+          risk: r.risk,
+          treeNo: r.tree_no,
         },
       })),
     };

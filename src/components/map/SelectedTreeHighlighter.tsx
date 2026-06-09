@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import type { GeoJSONSource } from 'maplibre-gl';
 import { useMap } from './MapContext';
 import { useSelection } from './SelectionContext';
+import { HIGHLIGHT_PIN_PAINT } from './treeLayer';
 import { trpc } from '@/lib/trpc/client';
 
 const HL_SOURCE = 'tree-highlight';
@@ -37,12 +38,7 @@ export function SelectedTreeHighlighter() {
           id: HL_LAYER,
           type: 'circle',
           source: HL_SOURCE,
-          paint: {
-            'circle-color': '#f97316',
-            'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-width': 2.5,
-            'circle-radius': 8,
-          },
+          paint: HIGHLIGHT_PIN_PAINT,
         });
       }
     };
