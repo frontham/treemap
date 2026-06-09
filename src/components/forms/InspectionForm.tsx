@@ -30,22 +30,66 @@ export type InspectionFormValues = {
   customFields: Record<string, unknown>;
 };
 
+/** The subset of an inspection we prefill when editing an existing one. */
+export type InspectionInitial = {
+  inspectedOn: string | Date;
+  health?: string | null;
+  condition?: string | null;
+  dbhCm?: number | null;
+  heightM?: number | null;
+  canopyRadiusM?: number | null;
+  estimatedAgeYears?: number | null;
+  notes?: string | null;
+  customFields?: Record<string, unknown> | null;
+};
+
 type Props = {
-  /** Current tree values — every field is prefilled from these for review. */
+  /** Current tree values — used to prefill a brand-new inspection. */
   tree: TreeView;
   today: string; // YYYY-MM-DD, passed in (no Date() in render)
+  /** When set, edit this existing inspection (prefilled from it, not the tree). */
+  initial?: InspectionInitial;
   onSubmit: (values: InspectionFormValues) => void | Promise<void>;
   onCancel: () => void;
   pending?: boolean;
 };
 
-/** New-inspection form: all condition fields prefilled from the tree, plus an
- *  inspection date. Reuses the tree field parser, including custom fields. */
-export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Props) {
+function toDateInput(v: string | Date): string {
+  return v instanceof Date ? v.toISOString().slice(0, 10) : v.slice(0, 10);
+}
+
+/** New/edit inspection form. Creating prefills from the tree's current values;
+ *  editing prefills from the inspection itself. Reuses the tree field parser. */
+export function InspectionForm({ tree, today, initial, onSubmit, onCancel, pending }: Props) {
   const t = useT();
+  const isEdit = !!initial;
   const healthOptions = HEALTH_VALUES.map((v) => ({ value: v, label: t(`health.${v}`) }));
   const conditionOptions = CONDITION_VALUES.map((v) => ({ value: v, label: t(`condition.${v}`) }));
   const { data: defs = [] } = trpc.customFields.list.useQuery();
+
+  const base = initial
+    ? {
+        inspectedOn: toDateInput(initial.inspectedOn),
+        health: initial.health ?? 'unknown',
+        condition: initial.condition ?? 'unknown',
+        dbhCm: initial.dbhCm ?? undefined,
+        heightM: initial.heightM ?? undefined,
+        canopyRadiusM: initial.canopyRadiusM ?? undefined,
+        estimatedAgeYears: initial.estimatedAgeYears ?? undefined,
+        notes: initial.notes ?? undefined,
+        customFields: initial.customFields ?? {},
+      }
+    : {
+        inspectedOn: today,
+        health: tree.health ?? 'unknown',
+        condition: tree.condition ?? 'unknown',
+        dbhCm: tree.dbhCm,
+        heightM: tree.heightM,
+        canopyRadiusM: tree.canopyRadiusM,
+        estimatedAgeYears: tree.estimatedAgeYears,
+        notes: tree.notes,
+        customFields: tree.customFields ?? {},
+      };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -67,18 +111,21 @@ export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Pro
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <DateField name="inspectedOn" label={t('insp.date')} defaultValue={today} />
+      {isEdit ? (
+        <h3 className="text-sm font-medium text-ink">{t('insp.edit')}</h3>
+      ) : null}
+      <DateField name="inspectedOn" label={t('insp.date')} defaultValue={base.inspectedOn} />
       <div className="grid grid-cols-2 gap-3">
-        <SelectField name="health" label={t('insp.health')} options={healthOptions} defaultValue={tree.health ?? 'unknown'} />
-        <SelectField name="condition" label={t('insp.condition')} options={conditionOptions} defaultValue={tree.condition ?? 'unknown'} />
+        <SelectField name="health" label={t('insp.health')} options={healthOptions} defaultValue={base.health} />
+        <SelectField name="condition" label={t('insp.condition')} options={conditionOptions} defaultValue={base.condition} />
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={tree.dbhCm} />
-        <NumberField name="heightM" label={t('field.height')} suffix="m" defaultValue={tree.heightM} />
-        <NumberField name="estimatedAgeYears" label={t('field.age')} suffix="yrs" defaultValue={tree.estimatedAgeYears} />
+        <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={base.dbhCm} />
+        <NumberField name="heightM" label={t('field.height')} suffix="m" defaultValue={base.heightM} />
+        <NumberField name="estimatedAgeYears" label={t('field.age')} suffix="yrs" defaultValue={base.estimatedAgeYears} />
       </div>
-      <NumberField name="canopyRadiusM" label={t('field.canopy')} suffix="m" defaultValue={tree.canopyRadiusM} />
-      <TextareaField name="notes" label={t('insp.notes')} defaultValue={tree.notes} />
+      <NumberField name="canopyRadiusM" label={t('field.canopy')} suffix="m" defaultValue={base.canopyRadiusM} />
+      <TextareaField name="notes" label={t('insp.notes')} defaultValue={base.notes} />
 
       {defs.length > 0 ? (
         <section className="mt-1 flex flex-col gap-3 border-t border-hairline pt-3">
@@ -86,7 +133,7 @@ export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Pro
             {t('field.orgFields')}
           </h3>
           {defs.map((def) => (
-            <CustomFieldRenderer key={def.id} def={def} defaultValue={tree.customFields?.[def.key]} />
+            <CustomFieldRenderer key={def.id} def={def} defaultValue={base.customFields?.[def.key]} />
           ))}
         </section>
       ) : null}
@@ -96,7 +143,7 @@ export function InspectionForm({ tree, today, onSubmit, onCancel, pending }: Pro
           {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={pending}>
-          {pending ? t('common.saving') : t('insp.save')}
+          {pending ? t('common.saving') : isEdit ? t('insp.update') : t('insp.save')}
         </Button>
       </div>
     </form>

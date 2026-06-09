@@ -72,6 +72,13 @@ export const EditIcon = makeIcon(
   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" />,
 );
 
+export const TrashIcon = makeIcon(
+  <>
+    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <path d="M10 11v6M14 11v6" />
+  </>,
+);
+
 export const UserIcon = makeIcon(
   <>
     <circle cx="12" cy="8" r="4" />

@@ -2,11 +2,13 @@
 
 import { Fragment, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { PlusIcon } from '@/components/icons';
+import { IconButton } from '@/components/ui/IconButton';
+import { PlusIcon, EditIcon, TrashIcon } from '@/components/icons';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from './TreeView';
 import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
+import type { InspectionView } from '@/server/trpc/routers/inspections';
 
 type Props = { treeId: string; tree: TreeView; canEdit: boolean };
 
@@ -45,10 +47,11 @@ function InspectionDetails({
   );
 }
 
-/** Inspections tab: dated assessment log + a "New inspection" form. */
+/** Inspections tab: dated assessment log + create / edit / delete. */
 export function TreeInspections({ treeId, tree, canEdit }: Props) {
   const t = useT();
-  const [mode, setMode] = useState<'list' | 'new'>('list');
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<InspectionView | null>(null);
   const utils = trpc.useUtils();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -56,32 +59,68 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
   const { data: defs = [] } = trpc.customFields.list.useQuery();
   const labelFor = (key: string) => defs.find((d) => d.key === key)?.label ?? key;
 
+  // Created/edited/deleted inspections can all change the tree's current values
+  // (it mirrors the latest inspection) and its map colour, so invalidate both.
+  const refresh = () => {
+    utils.inspections.list.invalidate({ treeId });
+    utils.trees.get.invalidate({ id: treeId });
+    utils.trees.list.invalidate();
+  };
+
   const create = trpc.inspections.create.useMutation({
     onSuccess: () => {
-      utils.inspections.list.invalidate({ treeId });
-      utils.trees.get.invalidate({ id: treeId }); // tree's current values changed
-      utils.trees.list.invalidate(); // health can affect the map
-      setMode('list');
+      refresh();
+      setCreating(false);
     },
     onError: (e) => window.alert(`Couldn't save inspection: ${e.message}`),
   });
 
-  if (mode === 'new') {
+  const update = trpc.inspections.update.useMutation({
+    onSuccess: () => {
+      refresh();
+      setEditing(null);
+    },
+    onError: (e) => window.alert(`Couldn't save inspection: ${e.message}`),
+  });
+
+  const remove = trpc.inspections.delete.useMutation({
+    onSuccess: refresh,
+    onError: (e) => window.alert(`Couldn't delete inspection: ${e.message}`),
+  });
+
+  if (editing) {
+    return (
+      <InspectionForm
+        tree={tree}
+        today={today}
+        initial={editing}
+        pending={update.isPending}
+        onCancel={() => setEditing(null)}
+        onSubmit={(values: InspectionFormValues) => update.mutate({ id: editing.id, ...values })}
+      />
+    );
+  }
+
+  if (creating) {
     return (
       <InspectionForm
         tree={tree}
         today={today}
         pending={create.isPending}
-        onCancel={() => setMode('list')}
+        onCancel={() => setCreating(false)}
         onSubmit={(values: InspectionFormValues) => create.mutate({ treeId, ...values })}
       />
     );
   }
 
+  const onDelete = (id: string) => {
+    if (window.confirm(t('insp.confirmDelete'))) remove.mutate({ id });
+  };
+
   return (
     <div className="flex flex-col gap-3">
       {canEdit ? (
-        <Button size="sm" variant="secondary" onClick={() => setMode('new')} className="self-start">
+        <Button size="sm" variant="secondary" onClick={() => setCreating(true)} className="self-start">
           <PlusIcon size={14} />
           {t('insp.new')}
         </Button>
@@ -99,9 +138,27 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
                 <time className="text-sm font-medium text-ink">
                   {new Date(i.inspectedOn).toLocaleDateString()}
                 </time>
-                <span className="truncate text-xs text-muted">
-                  {i.userName || i.inspectorName || i.userEmail || 'Unknown'}
-                </span>
+                <div className="flex min-w-0 items-center gap-1">
+                  <span className="min-w-0 truncate text-xs text-muted">
+                    {i.userName || i.inspectorName || i.userEmail || 'Unknown'}
+                  </span>
+                  {canEdit ? (
+                    <>
+                      <IconButton size="sm" label={t('common.edit')} onClick={() => setEditing(i)}>
+                        <EditIcon size={14} />
+                      </IconButton>
+                      <IconButton
+                        size="sm"
+                        label={t('common.delete')}
+                        onClick={() => onDelete(i.id)}
+                        disabled={remove.isPending}
+                        className="text-danger hover:bg-danger/10"
+                      >
+                        <TrashIcon size={14} />
+                      </IconButton>
+                    </>
+                  ) : null}
+                </div>
               </div>
               <p className="text-xs text-muted">
                 {t('insp.health')}:{' '}

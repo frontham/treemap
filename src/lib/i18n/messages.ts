@@ -71,6 +71,9 @@ export const messages: Record<Locale, Record<string, string>> = {
     'insp.date': 'Inspection date',
     'insp.notes': 'Inspection notes',
     'insp.save': 'Save inspection',
+    'insp.update': 'Save changes',
+    'insp.edit': 'Edit inspection',
+    'insp.confirmDelete': 'Delete this inspection? This cannot be undone.',
     'insp.details': 'Details',
 
     'move.title': 'Move tree',
@@ -262,6 +265,9 @@ export const messages: Record<Locale, Record<string, string>> = {
     'insp.date': 'Inspectiedatum',
     'insp.notes': 'Inspectienotities',
     'insp.save': 'Inspectie opslaan',
+    'insp.update': 'Wijzigingen opslaan',
+    'insp.edit': 'Inspectie bewerken',
+    'insp.confirmDelete': 'Deze inspectie verwijderen? Dit kan niet ongedaan worden gemaakt.',
     'insp.details': 'Details',
 
     'move.title': 'Boom verplaatsen',
