@@ -33,6 +33,7 @@ export function TreeAttributesGrid({ tree }: Props) {
         value={tree.condition ? t(`condition.${tree.condition}`) : undefined}
       />
       <Row label={t('field.risk')} value={tree.risk ? t(`risk.${tree.risk}`) : undefined} />
+      <Row label={t('field.lastInspected')} value={tree.lastInspectedOn} mono />
       <Row label={t('field.nextDue')} value={tree.nextInspectionOn} mono />
       <Row label={t('field.dbh')} value={tree.dbhCm != null ? `${tree.dbhCm} cm` : undefined} mono />
       <Row

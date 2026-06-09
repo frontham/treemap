@@ -26,5 +26,7 @@ export type TreeView = {
   notes?: string;
   customFields: Record<string, unknown>;
   location: { lng: number; lat: number };
+  /** Date of the most recent inspection (YYYY-MM-DD), if any. */
+  lastInspectedOn?: string;
   photos: TreePhotoView[];
 };

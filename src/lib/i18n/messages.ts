@@ -141,6 +141,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'field.health': 'Health',
     'field.condition': 'Condition',
     'field.risk': 'Risk',
+    'field.lastInspected': 'Last inspected',
     'field.nextDue': 'Next inspection',
     'field.treeNo': 'Tree no',
     'field.dbh': 'DBH',
@@ -172,6 +173,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'treeForm.newTitle': 'New tree',
     'treeForm.editTitle': 'Edit tree',
     'treeForm.saveChanges': 'Save changes',
+    'treeForm.assessmentHint':
+      'Editing corrects the tree’s current values in place. To keep a dated record of condition over time, add an inspection instead.',
 
     'import.title': 'Import mapping',
     'import.intro': 'Map each column to a field, then import.',
@@ -329,6 +332,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'field.health': 'Gezondheid',
     'field.condition': 'Conditie',
     'field.risk': 'Risico',
+    'field.lastInspected': 'Laatst geïnspecteerd',
     'field.nextDue': 'Volgende inspectie',
     'field.treeNo': 'Boomnr',
     'field.dbh': 'DBH',
@@ -360,6 +364,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'treeForm.newTitle': 'Nieuwe boom',
     'treeForm.editTitle': 'Boom bewerken',
     'treeForm.saveChanges': 'Wijzigingen opslaan',
+    'treeForm.assessmentHint':
+      'Bewerken corrigeert de huidige waarden direct. Wil je de conditie in de tijd vastleggen, voeg dan een inspectie toe.',
 
     'import.title': 'Importtoewijzing',
     'import.intro': 'Wijs elke kolom toe aan een veld en importeer.',
