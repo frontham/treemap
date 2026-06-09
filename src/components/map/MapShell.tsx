@@ -4,8 +4,12 @@ import { useRef, type ReactNode } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContext, type Cursor } from './MapContext';
 import { SelectionProvider } from './SelectionContext';
+import { SearchProvider } from './SearchContext';
 import { ComposeProvider } from './ComposeContext';
 import { LayersProvider } from './LayersContext';
+import { DeadTreesProvider } from './DeadTreesContext';
+import { PinColorProvider } from './PinColorContext';
+import { TreeFilterProvider } from './TreeFilterContext';
 import { AlignProvider } from './AlignContext';
 import { TreeMoveProvider } from './TreeMoveContext';
 import { useMaplibre } from './useMaplibre';
@@ -32,19 +36,27 @@ export function MapShell({ initialCenter, initialZoom, children }: Props) {
   return (
     <MapContext.Provider value={{ map, cursor }}>
       <SelectionProvider>
-        <ComposeProvider>
-          <LayersProvider>
-            <AlignProvider>
-              <TreeMoveProvider>
-                <main className="relative h-screen w-screen overflow-hidden bg-paper">
-                  <div ref={containerRef} className="h-full w-full" />
-                  {error ? <MapErrorOverlay message={error} /> : null}
-                  {children}
-                </main>
-              </TreeMoveProvider>
-            </AlignProvider>
-          </LayersProvider>
-        </ComposeProvider>
+        <SearchProvider>
+          <ComposeProvider>
+            <LayersProvider>
+              <DeadTreesProvider>
+                <PinColorProvider>
+                  <TreeFilterProvider>
+                    <AlignProvider>
+                      <TreeMoveProvider>
+                        <main className="relative h-screen w-screen overflow-hidden bg-paper">
+                          <div ref={containerRef} className="h-full w-full" />
+                          {error ? <MapErrorOverlay message={error} /> : null}
+                          {children}
+                        </main>
+                      </TreeMoveProvider>
+                    </AlignProvider>
+                  </TreeFilterProvider>
+                </PinColorProvider>
+              </DeadTreesProvider>
+            </LayersProvider>
+          </ComposeProvider>
+        </SearchProvider>
       </SelectionProvider>
     </MapContext.Provider>
   );

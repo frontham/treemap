@@ -32,7 +32,7 @@ function markerEl(): HTMLDivElement {
  * it updated as they move (watchPosition), plus a heading beam from the device
  * compass. Recenters once on enable. Tap again to hide.
  */
-export function UserLocationButton() {
+export function UserLocationButton({ onActivate }: { onActivate?: () => void }) {
   const { map } = useMap();
   const t = useT();
   const [on, setOn] = useState(false);
@@ -119,6 +119,7 @@ export function UserLocationButton() {
   }, [map, on]);
 
   const toggle = async () => {
+    onActivate?.(); // let the cluster close any open layers/filters card
     if (on) {
       setOn(false);
       return;

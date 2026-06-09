@@ -1,7 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui/Pill';
-import { SearchIcon } from '@/components/icons';
+import { TreeSearch } from '@/components/map/TreeSearch';
 import { AddTreeButton } from '@/components/map/AddTreeButton';
 import { DataMenu } from './DataMenu';
 import { MapToolsMenu } from './MapToolsMenu';
@@ -10,7 +9,6 @@ import { PendingIndicator } from './PendingIndicator';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { UserMenu } from './UserMenu';
 import { useRole } from '@/components/auth/useRole';
-import { useT } from '@/lib/i18n/LocaleProvider';
 
 /**
  * Top floating chrome: project switcher + search on the left; data, editor-only
@@ -19,21 +17,13 @@ import { useT } from '@/lib/i18n/LocaleProvider';
  */
 export function FloatingTopBar() {
   const { can } = useRole();
-  const t = useT();
   const canEdit = can('editor');
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex flex-wrap items-start justify-between gap-2 px-3">
       <div className="pointer-events-auto flex items-center gap-2">
         <ProjectSwitcher />
-        <Pill className="hidden sm:inline-flex">
-          <SearchIcon size={14} className="text-muted" />
-          <input
-            aria-label={t('search.placeholder')}
-            placeholder={t('search.placeholder')}
-            className="w-40 bg-transparent text-sm placeholder:text-muted focus:outline-none"
-          />
-        </Pill>
+        <TreeSearch />
       </div>
 
       <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">

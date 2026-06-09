@@ -1,5 +1,6 @@
-import type { Map } from 'maplibre-gl';
+import type { Map, CircleLayerSpecification } from 'maplibre-gl';
 import { colors } from '@/styles/tokens';
+import { pinColorExpression } from './pinColor';
 
 export const TREES_SOURCE = 'trees';
 export const TREES_PIN_LAYER = 'trees-pins';
@@ -8,6 +9,20 @@ export const TREES_CLUSTER_COUNT_LAYER = 'trees-cluster-count';
 
 export const PENDING_SOURCE = 'pending-trees';
 export const PENDING_LAYER = 'pending-trees-pins';
+
+/** Opacity for dead trees when the user picks the "dim" display mode. */
+export const DEAD_DIM_OPACITY = 0.35;
+
+/**
+ * Orange "highlight" pin styling, shared by the selected-tree highlighter and
+ * the search-match highlighter so a matched pin reads exactly like a selected one.
+ */
+export const HIGHLIGHT_PIN_PAINT: CircleLayerSpecification['paint'] = {
+  'circle-color': '#f97316',
+  'circle-stroke-color': '#FFFFFF',
+  'circle-stroke-width': 2.5,
+  'circle-radius': 8,
+};
 
 /**
  * Registers the GeoJSON source and three layers used to render tree pins:
@@ -59,21 +74,12 @@ export function addTreeLayer(map: Map) {
     type: 'circle',
     source: TREES_SOURCE,
     filter: ['!', ['has', 'point_count']],
-    // Colored by health (muted, matching the Details-tab dot): green = healthy,
-    // amber = fair/poor, red = dead, dark = unknown/default. The selected tree is
-    // highlighted separately by SelectedTreeHighlighter (orange overlay on top).
+    // Colored by an attribute (default: health) — green/amber/red, dark = unknown.
+    // TreesLoader swaps circle-color when the user picks a different attribute
+    // (see pinColorExpression). The selected tree is highlighted separately by
+    // SelectedTreeHighlighter (orange overlay on top).
     paint: {
-      'circle-color': [
-        'match',
-        ['get', 'health'],
-        'healthy',
-        colors.sage,
-        ['fair', 'poor'],
-        colors.warn,
-        'dead',
-        colors.danger,
-        '#3F4248',
-      ],
+      'circle-color': pinColorExpression('health'),
       'circle-stroke-color': '#FFFFFF',
       'circle-stroke-width': 2,
       'circle-radius': 6,
