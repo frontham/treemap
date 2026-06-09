@@ -41,6 +41,7 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'controls.menu': 'Menu',
     'controls.location': 'My location',
+    'menu.map': 'Map',
     'controls.layers': 'Layers',
     'controls.filters': 'Filters',
     'controls.basemap': 'Base map',
@@ -235,6 +236,7 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'controls.menu': 'Menu',
     'controls.location': 'Mijn locatie',
+    'menu.map': 'Kaart',
     'controls.layers': 'Lagen',
     'controls.filters': 'Filters',
     'controls.basemap': 'Achtergrondkaart',
