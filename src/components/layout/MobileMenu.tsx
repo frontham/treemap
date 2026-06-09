@@ -18,7 +18,7 @@ import {
 } from '@/components/map/basemaps';
 import { UserLocationButton } from '@/components/map/UserLocationButton';
 import { useAlign, type CalibrateTool } from '@/components/map/AlignContext';
-import { LayersPanel } from '@/components/overlays/LayersPanel';
+import { OverlayRow } from '@/components/overlays/OverlayRow';
 import { useImport } from '@/components/imports/useImport';
 import { useRole } from '@/components/auth/useRole';
 import { trpc } from '@/lib/trpc/client';
@@ -41,10 +41,10 @@ export function MobileMenu() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { openGeoJson, openCsv, importUi } = useImport();
+  const { data: overlays = [] } = trpc.overlays.list.useQuery();
 
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<'root' | 'basemap'>('root');
-  const [layersOpen, setLayersOpen] = useState(false);
+  const [view, setView] = useState<'root' | 'basemap' | 'layers'>('root');
   const [basemapId, setBasemapId] = useState<BasemapId>(() => readStoredBasemapId());
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +91,6 @@ export function MobileMenu() {
 
   return (
     <>
-      {layersOpen ? <LayersPanel /> : null}
       {importUi}
       <div ref={rootRef} className="relative">
         <IconButton
@@ -106,17 +105,21 @@ export function MobileMenu() {
         </IconButton>
 
         {open ? (
-          <div className="absolute right-0 mt-1.5 max-h-[70vh] w-72 overflow-y-auto overflow-x-hidden rounded-lg bg-paper hairline shadow-floating">
-            {view === 'basemap' ? (
+          <div className="absolute right-0 mt-1.5 max-h-[70vh] w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto overflow-x-hidden rounded-lg bg-paper hairline shadow-floating">
+            {view === 'layers' ? (
               <>
-                <button
-                  type="button"
-                  onClick={() => setView('root')}
-                  className="flex w-full items-center gap-1.5 border-b border-hairline px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel"
-                >
-                  <span className="text-muted">‹</span>
-                  {t('controls.basemap')}
-                </button>
+                <BackHeader label={t('layers.overlays')} onBack={() => setView('root')} />
+                <div className="flex flex-col gap-1.5 p-2">
+                  {overlays.length === 0 ? (
+                    <p className="px-1.5 py-3 text-center text-xs text-muted">{t('layers.empty')}</p>
+                  ) : (
+                    overlays.map((o) => <OverlayRow key={o.id} overlay={o} />)
+                  )}
+                </div>
+              </>
+            ) : view === 'basemap' ? (
+              <>
+                <BackHeader label={t('controls.basemap')} onBack={() => setView('root')} />
                 {BASEMAPS.map((b) => (
                   <button
                     key={b.id}
@@ -145,10 +148,10 @@ export function MobileMenu() {
                 <ControlRow label={t('controls.location')}>
                   <UserLocationButton />
                 </ControlRow>
-                <ToggleRow
+                <DrillRow
                   label={t('controls.layers')}
-                  active={layersOpen}
-                  onClick={() => setLayersOpen((v) => !v)}
+                  value={overlays.length ? String(overlays.length) : ''}
+                  onClick={() => setView('layers')}
                 />
                 <DrillRow
                   label={t('controls.basemap')}
@@ -252,6 +255,20 @@ export function MobileMenu() {
   );
 }
 
+/** Sub-view header with a back affordance, returning to the root list. */
+function BackHeader({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      className="flex w-full items-center gap-1.5 border-b border-hairline px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel"
+    >
+      <span className="text-muted">‹</span>
+      {label}
+    </button>
+  );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="px-3 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
@@ -295,22 +312,6 @@ function ActionRow({
     >
       {label}
       {active ? <span className="text-xs text-accent">on</span> : null}
-    </button>
-  );
-}
-
-/** Full-width toggle row showing on/off state. */
-function ToggleRow({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm text-ink transition-colors hover:bg-panel"
-    >
-      {label}
-      <span className={cn('text-xs', active ? 'text-accent' : 'text-muted')}>
-        {active ? 'on' : 'off'}
-      </span>
     </button>
   );
 }
