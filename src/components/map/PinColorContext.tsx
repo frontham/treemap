@@ -14,6 +14,9 @@ const PinColorContext = createContext<PinColorContextValue>({
 });
 
 // One choice per device, remembered across reloads (like the basemap pick).
+// Read synchronously so the map (a client-only canvas) paints with the saved
+// choice on the first frame. Server-rendered consumers of this value (PinLegend)
+// gate on useHydrated() to avoid a hydration mismatch.
 const STORAGE_KEY = 'treemap.pinColorBy';
 
 function loadPersisted(): PinColorBy {

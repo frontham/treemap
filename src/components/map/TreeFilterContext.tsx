@@ -59,6 +59,9 @@ function loadPersisted(): Excluded {
  * whose value is excluded for any attribute.
  */
 export function TreeFilterProvider({ children }: { children: ReactNode }) {
+  // Read synchronously so the map filters trees on the first frame (no flash of
+  // all trees). The one server-rendered consumer of `active` — the filter dot in
+  // the control cluster — gates on useHydrated() to avoid a hydration mismatch.
   const [excluded, setExcluded] = useState<Excluded>(loadPersisted);
 
   useEffect(() => {

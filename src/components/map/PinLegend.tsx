@@ -4,6 +4,7 @@ import { usePinColor } from './PinColorContext';
 import { useAlign } from './AlignContext';
 import { pinColorLegend } from './pinColor';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useHydrated } from '@/lib/useHydrated';
 
 /**
  * Small key in the bottom-left explaining what the pin colours mean for the
@@ -14,8 +15,12 @@ export function PinLegend() {
   const t = useT();
   const { colorBy } = usePinColor();
   const { tool } = useAlign();
+  const hydrated = useHydrated();
 
-  if (colorBy === 'none' || tool !== 'none') return null;
+  // `colorBy` comes from localStorage, so it differs between the server (default)
+  // and the client. Render nothing until hydrated so the first client paint
+  // matches the server; the legend then appears with the real choice.
+  if (!hydrated || colorBy === 'none' || tool !== 'none') return null;
   const rows = pinColorLegend(colorBy);
 
   return (

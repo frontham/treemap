@@ -67,6 +67,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'tree.tab.inspections': 'Inspections',
     'tree.move': 'Move',
 
+    'trees.loading': 'Loading trees…',
     'history.loading': 'Loading history…',
     'history.empty': 'No history yet.',
     'history.noChanges': 'No field changes.',
@@ -273,6 +274,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'tree.tab.inspections': 'Inspecties',
     'tree.move': 'Verplaatsen',
 
+    'trees.loading': 'Bomen laden…',
     'history.loading': 'Geschiedenis laden…',
     'history.empty': 'Nog geen geschiedenis.',
     'history.noChanges': 'Geen veldwijzigingen.',
