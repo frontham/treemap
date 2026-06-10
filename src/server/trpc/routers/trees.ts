@@ -516,6 +516,39 @@ export const treesRouter = router({
       RETURNING id
     `);
     const row = result.rows[0] as { id: string };
+
+    // If the create form captured any condition info, record it as the tree's
+    // first dated assessment (today) so it shows in the timeline rather than
+    // sitting as an orphaned value on the tree row. The tree row already holds
+    // these same values, so no re-sync is needed. Quick placements that leave
+    // condition blank/unknown create no inspection.
+    const hasAssessment =
+      (input.health != null && input.health !== 'unknown') ||
+      (input.condition != null && input.condition !== 'unknown') ||
+      input.dbhCm != null ||
+      input.heightM != null ||
+      input.canopyRadiusM != null ||
+      input.estimatedAgeYears != null ||
+      (input.notes != null && input.notes !== '') ||
+      (input.customFields != null && Object.keys(input.customFields).length > 0);
+
+    if (hasAssessment) {
+      await ctx.tx.execute(sql`
+        INSERT INTO tree_inspections (
+          tree_id, org_id, project_id, inspected_on, inspected_by,
+          health, condition, dbh_cm, height_m, canopy_radius_m,
+          estimated_age_years, notes, custom_fields
+        ) VALUES (
+          ${row.id}, current_org_id(), current_project_id(), CURRENT_DATE, current_user_id(),
+          ${input.health ?? 'unknown'}::tree_health,
+          ${input.condition ?? 'unknown'}::tree_condition,
+          ${input.dbhCm ?? null}, ${input.heightM ?? null}, ${input.canopyRadiusM ?? null},
+          ${input.estimatedAgeYears ?? null}, ${input.notes ?? null},
+          ${JSON.stringify(input.customFields ?? {})}::jsonb
+        )
+      `);
+    }
+
     return { id: row.id };
   }),
 });
