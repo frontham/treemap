@@ -12,6 +12,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'common.saving': 'Saving…',
     'common.delete': 'Delete',
     'common.edit': 'Edit',
+    'common.close': 'Close',
     'common.unknown': 'Unknown',
 
     'account.title': 'Account',
@@ -66,6 +67,25 @@ export const messages: Record<Locale, Record<string, string>> = {
     'tree.tab.history': 'History',
     'tree.tab.inspections': 'Inspections',
     'tree.move': 'Move',
+
+    'photos.title': 'Photos',
+    'photos.add': 'Add photo',
+    'photos.delete': 'Delete photo',
+    'photos.deleteConfirm': 'Delete this photo?',
+    'photos.uploadFailed': "Couldn't add photo",
+    'photos.empty': 'No photos yet.',
+    'photos.latestInspection': 'Latest inspection',
+    'photos.treeTitle': 'Tree photos',
+    'photos.evidence': 'Evidence',
+
+    'assess.current': 'Current assessment',
+    'assess.update': 'Update assessment',
+    'assess.new': 'New assessment',
+    'assess.notInspected': 'Not yet inspected',
+    'assess.title': 'Assessments',
+    'assess.add': 'Add assessment',
+    'assess.currentTag': 'Current',
+    'assess.changelog': 'Change log',
 
     'history.loading': 'Loading history…',
     'history.empty': 'No history yet.',
@@ -189,7 +209,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'treeForm.editTitle': 'Edit tree',
     'treeForm.saveChanges': 'Save changes',
     'treeForm.assessmentHint':
-      'Editing corrects the tree’s current values in place. To keep a dated record of condition over time, add an inspection instead.',
+      'Condition, measurements, notes and org fields are recorded as dated assessments — change them with “Update assessment”, not here.',
 
     'import.title': 'Import mapping',
     'import.intro': 'Map each column to a field, then import.',
@@ -218,6 +238,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'common.saving': 'Opslaan…',
     'common.delete': 'Verwijderen',
     'common.edit': 'Bewerken',
+    'common.close': 'Sluiten',
     'common.unknown': 'Onbekend',
 
     'account.title': 'Account',
@@ -272,6 +293,25 @@ export const messages: Record<Locale, Record<string, string>> = {
     'tree.tab.history': 'Geschiedenis',
     'tree.tab.inspections': 'Inspecties',
     'tree.move': 'Verplaatsen',
+
+    'photos.title': "Foto's",
+    'photos.add': 'Foto toevoegen',
+    'photos.delete': 'Foto verwijderen',
+    'photos.deleteConfirm': 'Deze foto verwijderen?',
+    'photos.uploadFailed': 'Foto toevoegen mislukt',
+    'photos.empty': "Nog geen foto's.",
+    'photos.latestInspection': 'Laatste inspectie',
+    'photos.treeTitle': "Boomfoto's",
+    'photos.evidence': 'Bewijs',
+
+    'assess.current': 'Huidige beoordeling',
+    'assess.update': 'Beoordeling bijwerken',
+    'assess.new': 'Nieuwe beoordeling',
+    'assess.notInspected': 'Nog niet geïnspecteerd',
+    'assess.title': 'Beoordelingen',
+    'assess.add': 'Beoordeling toevoegen',
+    'assess.currentTag': 'Huidig',
+    'assess.changelog': 'Wijzigingslogboek',
 
     'history.loading': 'Geschiedenis laden…',
     'history.empty': 'Nog geen geschiedenis.',
@@ -395,7 +435,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'treeForm.editTitle': 'Boom bewerken',
     'treeForm.saveChanges': 'Wijzigingen opslaan',
     'treeForm.assessmentHint':
-      'Bewerken corrigeert de huidige waarden direct. Wil je de conditie in de tijd vastleggen, voeg dan een inspectie toe.',
+      'Conditie, metingen, notities en organisatievelden worden vastgelegd als gedateerde beoordelingen — wijzig ze via “Beoordeling bijwerken”, niet hier.',
 
     'import.title': 'Importtoewijzing',
     'import.intro': 'Wijs elke kolom toe aan een veld en importeer.',

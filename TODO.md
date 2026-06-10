@@ -20,4 +20,9 @@ and route **`loading.tsx`** for the map + org segments. Still missing per-contro
 - [ ] **Offline queue project scoping** — stamp the active `projectId` into queued `trees.create` payloads so a
       tree queued under project A can't drain into project B after switching ([src/lib/offline/*](src/lib/offline/)).
 - [ ] **Org rename** — replace the hardcoded `demo` org slug with the real org name + slug (+ redirect).
+- [ ] **Tree photos → object storage** — photos currently store downscaled JPEG **data URLs** in
+      `tree_photos.storage_key`/`thumbnail_key` ([processImage](src/lib/image/processImage.ts) +
+      [trees.addPhoto](src/server/trpc/routers/trees.ts)), matching the overlays pattern. The `.env` already
+      has Cloudflare **R2** slots (empty); migrating is a non-breaking backfill — decode each row's base64,
+      upload to R2/Vercel Blob, rewrite those two columns. API/UI unchanged.
 - [ ] Run `npm run build` before deploying (dev-verified only so far).
