@@ -68,6 +68,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'tree.tab.inspections': 'Inspections',
     'tree.move': 'Move',
 
+    'trees.loading': 'Loading trees…',
     'photos.title': 'Photos',
     'photos.add': 'Add photo',
     'photos.delete': 'Delete photo',
@@ -294,6 +295,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'tree.tab.inspections': 'Inspecties',
     'tree.move': 'Verplaatsen',
 
+    'trees.loading': 'Bomen laden…',
     'photos.title': "Foto's",
     'photos.add': 'Foto toevoegen',
     'photos.delete': 'Foto verwijderen',

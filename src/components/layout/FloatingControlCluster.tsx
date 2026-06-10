@@ -10,6 +10,7 @@ import { LayersPanel } from '@/components/overlays/LayersPanel';
 import { FiltersPanel } from '@/components/overlays/FiltersPanel';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useHydrated } from '@/lib/useHydrated';
 
 type Panel = 'layers' | 'filters';
 
@@ -22,7 +23,11 @@ export function FloatingControlCluster() {
   const [panel, setPanel] = useState<Panel | null>(null);
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
-  const { active: filtersActive } = useTreeFilter();
+  const { active } = useTreeFilter();
+  // `active` derives from localStorage filters; only show the dot post-hydration
+  // so the first client paint matches the server (no dot) and doesn't mismatch.
+  const hydrated = useHydrated();
+  const filtersActive = hydrated && active;
 
   // Close the open card on a click anywhere outside it (the panel and the toggle
   // buttons are all inside `ref`, so interacting with either is safe).

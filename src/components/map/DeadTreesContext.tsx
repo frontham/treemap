@@ -23,6 +23,9 @@ const DeadTreesContext = createContext<DeadTreesContextValue>({
 });
 
 // One choice per device, remembered across reloads (like the basemap pick).
+// Read synchronously so the map paints with the saved mode on the first frame;
+// this value has no server-rendered DOM consumer (only the map + the control in
+// a closed menu), so no hydration gate is needed.
 const STORAGE_KEY = 'treemap.deadTrees';
 
 function loadPersisted(): DeadTreeMode {
