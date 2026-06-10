@@ -82,6 +82,10 @@ export const messages: Record<Locale, Record<string, string>> = {
     'assess.update': 'Update assessment',
     'assess.new': 'New assessment',
     'assess.notInspected': 'Not yet inspected',
+    'assess.title': 'Assessments',
+    'assess.add': 'Add assessment',
+    'assess.currentTag': 'Current',
+    'assess.changelog': 'Change log',
 
     'history.loading': 'Loading history…',
     'history.empty': 'No history yet.',
@@ -304,6 +308,10 @@ export const messages: Record<Locale, Record<string, string>> = {
     'assess.update': 'Beoordeling bijwerken',
     'assess.new': 'Nieuwe beoordeling',
     'assess.notInspected': 'Nog niet geïnspecteerd',
+    'assess.title': 'Beoordelingen',
+    'assess.add': 'Beoordeling toevoegen',
+    'assess.currentTag': 'Huidig',
+    'assess.changelog': 'Wijzigingslogboek',
 
     'history.loading': 'Geschiedenis laden…',
     'history.empty': 'Nog geen geschiedenis.',
