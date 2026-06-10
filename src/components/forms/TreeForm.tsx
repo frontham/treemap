@@ -75,25 +75,8 @@ export function TreeForm({
           placeholder="e.g. Quercus robur"
           defaultValue={initial?.scientificName}
         />
-        {mode === 'edit' ? (
-          <p className="rounded-md bg-panel/60 px-3 py-2 text-xs text-muted hairline">
-            {t('treeForm.assessmentHint')}
-          </p>
-        ) : null}
-        <div className="grid grid-cols-2 gap-3">
-          <SelectField
-            name="health"
-            label={t('field.health')}
-            options={healthOptions}
-            defaultValue={initial?.health ?? 'unknown'}
-          />
-          <SelectField
-            name="condition"
-            label={t('field.condition')}
-            options={conditionOptions}
-            defaultValue={initial?.condition ?? 'unknown'}
-          />
-        </div>
+
+        {/* Identity — always editable (not mirrored from inspections). */}
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             name="risk"
@@ -107,33 +90,58 @@ export function TreeForm({
             defaultValue={initial?.nextInspectionOn}
           />
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={initial?.dbhCm} />
-          <NumberField name="heightM" label={t('field.height')} suffix="m" defaultValue={initial?.heightM} />
-          <NumberField
-            name="estimatedAgeYears"
-            label={t('field.age')}
-            suffix="yrs"
-            defaultValue={initial?.estimatedAgeYears}
-          />
-        </div>
         <DateField name="plantedDate" label={t('field.planted')} defaultValue={initial?.plantedDate} />
-        <TextareaField name="notes" label={t('field.notes')} defaultValue={initial?.notes} />
 
-        {defs.length > 0 ? (
-          <section className="mt-2 flex flex-col gap-3 border-t border-hairline pt-4">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-              {t('field.orgFields')}
-            </h3>
-            {defs.map((def) => (
-              <CustomFieldRenderer
-                key={def.id}
-                def={def}
-                defaultValue={initial?.customFields?.[def.key]}
+        {mode === 'edit' ? (
+          <p className="rounded-md bg-panel/60 px-3 py-2 text-xs text-muted hairline">
+            {t('treeForm.assessmentHint')}
+          </p>
+        ) : (
+          // Condition is inspection-owned, so it's only set here when first
+          // placing the tree; afterwards it's changed via "Update assessment".
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <SelectField
+                name="health"
+                label={t('field.health')}
+                options={healthOptions}
+                defaultValue={initial?.health ?? 'unknown'}
               />
-            ))}
-          </section>
-        ) : null}
+              <SelectField
+                name="condition"
+                label={t('field.condition')}
+                options={conditionOptions}
+                defaultValue={initial?.condition ?? 'unknown'}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <NumberField name="dbhCm" label={t('field.dbh')} suffix="cm" defaultValue={initial?.dbhCm} />
+              <NumberField name="heightM" label={t('field.height')} suffix="m" defaultValue={initial?.heightM} />
+              <NumberField
+                name="estimatedAgeYears"
+                label={t('field.age')}
+                suffix="yrs"
+                defaultValue={initial?.estimatedAgeYears}
+              />
+            </div>
+            <TextareaField name="notes" label={t('field.notes')} defaultValue={initial?.notes} />
+
+            {defs.length > 0 ? (
+              <section className="mt-2 flex flex-col gap-3 border-t border-hairline pt-4">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
+                  {t('field.orgFields')}
+                </h3>
+                {defs.map((def) => (
+                  <CustomFieldRenderer
+                    key={def.id}
+                    def={def}
+                    defaultValue={initial?.customFields?.[def.key]}
+                  />
+                ))}
+              </section>
+            ) : null}
+          </>
+        )}
       </div>
 
       <footer className="flex items-center justify-between gap-2 border-t border-hairline p-4">

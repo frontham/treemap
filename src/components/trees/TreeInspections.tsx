@@ -7,6 +7,7 @@ import { PlusIcon, EditIcon, TrashIcon } from '@/components/icons';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from './TreeView';
+import { TreePhotosStrip } from './TreePhotosStrip';
 import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
 import type { InspectionView } from '@/server/trpc/routers/inspections';
 
@@ -122,7 +123,7 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
       {canEdit ? (
         <Button size="sm" variant="secondary" onClick={() => setCreating(true)} className="self-start">
           <PlusIcon size={14} />
-          {t('insp.new')}
+          {t('assess.add')}
         </Button>
       ) : null}
 
@@ -132,12 +133,19 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
         <p className="text-sm text-muted">{t('insp.empty')}</p>
       ) : (
         <ol className="flex flex-col gap-3">
-          {inspections.map((i) => (
+          {inspections.map((i, idx) => (
             <li key={i.id} className="rounded-lg p-3 hairline bg-panel/40">
               <div className="mb-1 flex items-center justify-between gap-2">
-                <time className="text-sm font-medium text-ink">
-                  {new Date(i.inspectedOn).toLocaleDateString()}
-                </time>
+                <div className="flex items-center gap-2">
+                  <time className="text-sm font-medium text-ink">
+                    {new Date(i.inspectedOn).toLocaleDateString()}
+                  </time>
+                  {idx === 0 ? (
+                    <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">
+                      {t('assess.currentTag')}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="flex min-w-0 items-center gap-1">
                   <span className="min-w-0 truncate text-xs text-muted">
                     {i.userName || i.inspectorName || i.userEmail || 'Unknown'}
@@ -172,6 +180,16 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
                 labelFor={labelFor}
                 summary={t('insp.details')}
               />
+              <div className="mt-2">
+                <TreePhotosStrip
+                  treeId={treeId}
+                  inspectionId={i.id}
+                  photos={i.photos}
+                  canEdit={canEdit}
+                  compact
+                  onChanged={() => utils.inspections.list.invalidate({ treeId })}
+                />
+              </div>
             </li>
           ))}
         </ol>

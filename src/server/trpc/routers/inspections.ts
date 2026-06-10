@@ -5,6 +5,7 @@ import { router } from '../init';
 import { projectProcedure } from '../projectProcedure';
 import { requireRole } from '../requireRole';
 import type { InspectionMapping } from '@/server/db/schema/projects';
+import type { TreePhotoView } from '@/components/trees/TreeView';
 
 const editorProcedure = projectProcedure.use(requireRole('editor'));
 const adminProcedure = projectProcedure.use(requireRole('admin'));
@@ -29,6 +30,7 @@ export type InspectionView = {
   externalRef: string | null;
   userName: string | null; // app user who recorded it
   userEmail: string | null;
+  photos: TreePhotoView[]; // evidence photos attached to this inspection
 };
 
 const InspectionFields = {
@@ -91,7 +93,15 @@ export const inspectionsRouter = router({
                i.estimated_age_years AS "estimatedAgeYears",
                i.notes, i.custom_fields AS "customFields",
                i.inspector_name AS "inspectorName", i.external_ref AS "externalRef",
-               u.name AS "userName", u.email AS "userEmail"
+               u.name AS "userName", u.email AS "userEmail",
+               COALESCE((
+                 SELECT json_agg(json_build_object(
+                          'id', p.id,
+                          'thumbnailUrl', COALESCE(p.thumbnail_key, p.storage_key),
+                          'caption', p.caption
+                        ) ORDER BY p.uploaded_at DESC)
+                 FROM tree_photos p WHERE p.inspection_id = i.id
+               ), '[]'::json) AS "photos"
         FROM tree_inspections i
         LEFT JOIN users u ON u.id = i.inspected_by
         WHERE i.tree_id = ${input.treeId}
