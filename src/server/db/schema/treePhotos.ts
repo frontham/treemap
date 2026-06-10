@@ -1,5 +1,6 @@
 import { pgTable, uuid, text, integer, timestamp, index } from 'drizzle-orm/pg-core';
 import { trees } from './trees';
+import { treeInspections } from './treeInspections';
 import { organizations } from './orgs';
 import { projects } from './projects';
 import { users } from './users';
@@ -15,6 +16,10 @@ export const treePhotos = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
     projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+    /** When set, the photo is evidence for this inspection (else a general tree photo). */
+    inspectionId: uuid('inspection_id').references(() => treeInspections.id, {
+      onDelete: 'set null',
+    }),
     storageKey: text('storage_key').notNull(),
     thumbnailKey: text('thumbnail_key'),
     mimeType: text('mime_type').notNull(),
@@ -29,6 +34,7 @@ export const treePhotos = pgTable(
   (t) => ({
     treeIdx: index('tree_photos_tree_idx').on(t.treeId),
     projectIdx: index('tree_photos_project_idx').on(t.projectId),
+    inspectionIdx: index('tree_photos_inspection_idx').on(t.inspectionId),
   }),
 );
 

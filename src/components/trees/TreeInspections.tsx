@@ -7,6 +7,7 @@ import { PlusIcon, EditIcon, TrashIcon } from '@/components/icons';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import type { TreeView } from './TreeView';
+import { TreePhotosStrip } from './TreePhotosStrip';
 import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
 import type { InspectionView } from '@/server/trpc/routers/inspections';
 
@@ -172,6 +173,16 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
                 labelFor={labelFor}
                 summary={t('insp.details')}
               />
+              <div className="mt-2">
+                <TreePhotosStrip
+                  treeId={treeId}
+                  inspectionId={i.id}
+                  photos={i.photos}
+                  canEdit={canEdit}
+                  compact
+                  onChanged={() => utils.inspections.list.invalidate({ treeId })}
+                />
+              </div>
             </li>
           ))}
         </ol>

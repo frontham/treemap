@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { router } from '../init';
 import { projectProcedure } from '../projectProcedure';
 import { requireRole } from '../requireRole';
-import type { TreeView } from '@/components/trees/TreeView';
+import type { TreeView, TreePhotoView } from '@/components/trees/TreeView';
 import { insertTreeRow } from '@/server/imports/insertTreeRow';
 import { geoJsonFeatureToTree } from '@/server/imports/geoJsonFeatureToTree';
 import { csvRowToTree } from '@/server/imports/csvRowToTree';
@@ -40,22 +40,31 @@ const CreateTreeInput = z.object({
   customFields: CustomFieldValues,
 });
 
+// Tree edits are identity-only. Condition, measurements, notes and custom
+// fields are owned by inspections (the tree row mirrors the latest one via
+// syncTreeFromLatestInspection), so editing them here would just be overwritten
+// — they're changed by logging/editing an inspection instead.
 const UpdateTreeInput = z.object({
   id: z.string().uuid(),
   commonName: z.string().optional(),
   scientificName: z.string().optional(),
-  health: z.string().optional(),
-  condition: z.string().optional(),
   risk: z.string().optional(),
   nextInspectionOn: z.string().optional(),
-  treeNo: z.number().optional(),
-  dbhCm: z.number().optional(),
-  heightM: z.number().optional(),
-  canopyRadiusM: z.number().optional(),
-  estimatedAgeYears: z.number().optional(),
   plantedDate: z.string().optional(),
-  notes: z.string().optional(),
-  customFields: CustomFieldValues,
+});
+
+const AddPhotoInput = z.object({
+  treeId: z.string().uuid(),
+  // When set, the photo is attached as evidence for this inspection.
+  inspectionId: z.string().uuid().optional(),
+  // Downscaled JPEG data URLs produced client-side by processImage().
+  storageKey: z.string().min(1),
+  thumbnailKey: z.string().min(1),
+  mimeType: z.string().default('image/jpeg'),
+  sizeBytes: z.number().int().nonnegative(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  caption: z.string().max(500).optional(),
 });
 
 type TreeListRow = {
@@ -90,6 +99,13 @@ type TreeDetailRow = {
   lng: number;
   lat: number;
   last_inspected_on: string | Date | null;
+};
+
+type TreePhotoRow = {
+  id: string;
+  thumbnail_key: string | null;
+  storage_key: string;
+  caption: string | null;
 };
 
 function formatDateOnly(value: string | Date | null): string | undefined {
@@ -174,6 +190,55 @@ export const treesRouter = router({
       `);
       const row = result.rows[0] as TreeDetailRow | undefined;
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      // Photos ship as thumbnails only — the full-size data URL is fetched on
+      // demand by the lightbox (trees.photo) so the drawer payload stays small.
+      // Only general (unlinked) photos here; inspection-linked photos are
+      // returned per inspection by inspections.list.
+      const photosResult = await ctx.tx.execute(sql`
+        SELECT id, thumbnail_key, storage_key, caption
+        FROM tree_photos
+        WHERE tree_id = ${input.id}
+          AND inspection_id IS NULL
+          AND (current_project_id() IS NULL OR project_id = current_project_id())
+        ORDER BY uploaded_at DESC
+      `);
+      const photos = (photosResult.rows as TreePhotoRow[]).map((p) => ({
+        id: p.id,
+        thumbnailUrl: p.thumbnail_key ?? p.storage_key,
+        caption: p.caption ?? undefined,
+      }));
+
+      // The inspection the tree currently mirrors (same ordering as
+      // syncTreeFromLatestInspection), with its evidence photos as thumbnails —
+      // shown read-only on Details so the snapshot keeps its supporting photos.
+      const latestResult = await ctx.tx.execute(sql`
+        SELECT i.id, i.inspected_on,
+               COALESCE((
+                 SELECT json_agg(json_build_object(
+                          'id', p.id,
+                          'thumbnailUrl', COALESCE(p.thumbnail_key, p.storage_key),
+                          'caption', p.caption
+                        ) ORDER BY p.uploaded_at DESC)
+                 FROM tree_photos p WHERE p.inspection_id = i.id
+               ), '[]'::json) AS photos
+        FROM tree_inspections i
+        WHERE i.tree_id = ${input.id}
+          AND (current_project_id() IS NULL OR i.project_id = current_project_id())
+        ORDER BY i.inspected_on DESC, i.created_at DESC
+        LIMIT 1
+      `);
+      const latestRow = latestResult.rows[0] as
+        | { id: string; inspected_on: string | Date; photos: TreePhotoView[] }
+        | undefined;
+      const latestInspection = latestRow
+        ? {
+            id: latestRow.id,
+            inspectedOn: formatDateOnly(latestRow.inspected_on) ?? '',
+            photos: latestRow.photos,
+          }
+        : undefined;
+
       return {
         id: row.id,
         commonName: row.common_name ?? 'Unknown',
@@ -192,7 +257,39 @@ export const treesRouter = router({
         customFields: row.custom_fields ?? {},
         location: { lng: Number(row.lng), lat: Number(row.lat) },
         lastInspectedOn: formatDateOnly(row.last_inspected_on),
-        photos: [],
+        photos,
+        latestInspection,
+      };
+    }),
+
+  /** Full-size image (data URL) for one photo — loaded by the lightbox on open. */
+  photo: projectProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const result = await ctx.tx.execute(sql`
+        SELECT id, storage_key, caption, width, height, mime_type
+        FROM tree_photos
+        WHERE id = ${input.id}
+          AND (current_project_id() IS NULL OR project_id = current_project_id())
+      `);
+      const row = result.rows[0] as
+        | {
+            id: string;
+            storage_key: string;
+            caption: string | null;
+            width: number | null;
+            height: number | null;
+            mime_type: string;
+          }
+        | undefined;
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return {
+        id: row.id,
+        url: row.storage_key,
+        caption: row.caption ?? undefined,
+        width: row.width ?? undefined,
+        height: row.height ?? undefined,
+        mimeType: row.mime_type,
       };
     }),
 
@@ -228,22 +325,16 @@ export const treesRouter = router({
     return { updated: upd.rowCount ?? payload.length };
   }),
 
+  /** Identity-only edit (see UpdateTreeInput). Condition/measurements/notes/
+   *  custom fields are deliberately not touched — those are inspection-owned. */
   update: editorProcedure.input(UpdateTreeInput).mutation(async ({ ctx, input }) => {
     const result = await ctx.tx.execute(sql`
       UPDATE trees SET
         common_name           = ${input.commonName ?? null},
         scientific_name       = ${input.scientificName ?? null},
-        health                = ${input.health ?? 'unknown'},
-        condition             = ${input.condition ?? 'unknown'},
         risk                  = ${input.risk ?? 'unknown'}::tree_risk,
         next_inspection_on    = ${input.nextInspectionOn ?? null}::date,
-        dbh_cm                = ${input.dbhCm ?? null},
-        height_m              = ${input.heightM ?? null},
-        canopy_radius_m       = ${input.canopyRadiusM ?? null},
-        estimated_age_years   = ${input.estimatedAgeYears ?? null},
         planted_date          = ${input.plantedDate ?? null},
-        notes                 = ${input.notes ?? null},
-        custom_fields         = ${JSON.stringify(input.customFields ?? {})}::jsonb,
         updated_by            = current_user_id(),
         updated_at            = now()
       WHERE id = ${input.id} AND deleted_at IS NULL
@@ -301,6 +392,54 @@ export const treesRouter = router({
         SET deleted_at = now(), updated_by = current_user_id()
         WHERE id = ${input.id} AND deleted_at IS NULL
       `);
+      return { ok: true };
+    }),
+
+  /**
+   * Attach a photo to a tree, optionally as evidence for one of its inspections.
+   * INSERT…SELECT from trees so a photo can only attach to a tree in the active
+   * project (no match → NOT_FOUND); when an inspectionId is given it must belong
+   * to that same tree. org_id/project_id are forced to the pinned tenant so RLS
+   * WITH CHECK passes.
+   */
+  addPhoto: editorProcedure.input(AddPhotoInput).mutation(async ({ ctx, input }) => {
+    const inspectionId = input.inspectionId ?? null;
+    const result = await ctx.tx.execute(sql`
+      INSERT INTO tree_photos (
+        tree_id, org_id, project_id, inspection_id, storage_key, thumbnail_key,
+        mime_type, size_bytes, width, height, caption, uploaded_by
+      )
+      SELECT t.id, current_org_id(), current_project_id(), ${inspectionId}::uuid,
+             ${input.storageKey}, ${input.thumbnailKey}, ${input.mimeType},
+             ${input.sizeBytes}, ${input.width ?? null}, ${input.height ?? null},
+             ${input.caption ?? null}, current_user_id()
+      FROM trees t
+      WHERE t.id = ${input.treeId} AND t.deleted_at IS NULL
+        AND (current_project_id() IS NULL OR t.project_id = current_project_id())
+        AND (
+          ${inspectionId}::uuid IS NULL
+          OR EXISTS (
+            SELECT 1 FROM tree_inspections i
+            WHERE i.id = ${inspectionId}::uuid AND i.tree_id = t.id
+          )
+        )
+      RETURNING id
+    `);
+    const photo = result.rows[0] as { id: string } | undefined;
+    if (!photo) throw new TRPCError({ code: 'NOT_FOUND' });
+    return { id: photo.id };
+  }),
+
+  deletePhoto: editorProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.tx.execute(sql`
+        DELETE FROM tree_photos
+        WHERE id = ${input.id}
+          AND (current_project_id() IS NULL OR project_id = current_project_id())
+        RETURNING id
+      `);
+      if (!result.rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
       return { ok: true };
     }),
 

@@ -10,6 +10,8 @@ import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import { TreeForm } from '@/components/forms/TreeForm';
 import type { TreeFormValues } from '@/components/forms/parseTreeFormData';
+import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
+import { PlusIcon } from '@/components/icons';
 import { TreeDetailHeader } from './TreeDetailHeader';
 import { TreeAttributesGrid } from './TreeAttributesGrid';
 import { TreeCustomFieldsList } from './TreeCustomFieldsList';
@@ -30,14 +32,22 @@ export function TreeDetailDrawer() {
   const { selectedId, select } = useSelection();
   const move = useTreeMove();
   const [editing, setEditing] = useState(false);
+  // 'assessing' = logging a new dated inspection from the Details "Update
+  // assessment" button (the only way to change condition/measurements/notes).
+  const [assessing, setAssessing] = useState(false);
   const { can } = useRole();
   const t = useT();
   const canEdit = can('editor');
   const isMoving = !!selectedId && move.movingId === selectedId;
   const [tab, setTab] = useState<'details' | 'history' | 'inspections'>('details');
+  const today = new Date().toISOString().slice(0, 10);
 
-  // Reset to the Details tab whenever a different tree is opened.
-  useEffect(() => setTab('details'), [selectedId]);
+  // Reset to the Details tab (and out of any sub-form) when a different tree opens.
+  useEffect(() => {
+    setTab('details');
+    setEditing(false);
+    setAssessing(false);
+  }, [selectedId]);
 
   const utils = trpc.useUtils();
 
@@ -61,9 +71,24 @@ export function TreeDetailDrawer() {
     },
   });
 
+  // Logging an assessment is creating an inspection; it re-syncs the tree's
+  // current values + map colour, so refresh the tree, the list and inspections.
+  const createInspection = trpc.inspections.create.useMutation({
+    onSuccess: () => {
+      if (selectedId) {
+        utils.trees.get.invalidate({ id: selectedId });
+        utils.inspections.list.invalidate({ treeId: selectedId });
+      }
+      utils.trees.list.invalidate();
+      setAssessing(false);
+    },
+    onError: (e) => window.alert(`Couldn't save assessment: ${e.message}`),
+  });
+
   function close() {
     select(null);
     setEditing(false);
+    setAssessing(false);
     move.cancel();
   }
 
@@ -104,6 +129,26 @@ export function TreeDetailDrawer() {
             </Button>
           }
         />
+      ) : assessing ? (
+        <div className="flex h-full flex-col p-5">
+          <TreeDetailHeader
+            commonName={tree.commonName}
+            scientificName={tree.scientificName}
+            onClose={() => setAssessing(false)}
+          />
+          <h3 className="mb-3 mt-3 text-sm font-medium text-ink">{t('assess.new')}</h3>
+          <div className="flex-1 overflow-y-auto">
+            <InspectionForm
+              tree={tree}
+              today={today}
+              pending={createInspection.isPending}
+              onCancel={() => setAssessing(false)}
+              onSubmit={(values: InspectionFormValues) => {
+                if (selectedId) createInspection.mutate({ treeId: selectedId, ...values });
+              }}
+            />
+          </div>
+        </div>
       ) : (
         <div className="flex h-full flex-col p-5">
           <TreeDetailHeader
@@ -131,9 +176,56 @@ export function TreeDetailDrawer() {
           <div className="flex-1 overflow-y-auto">
             {tab === 'details' ? (
               <div className="flex flex-col gap-5">
-                <TreeAttributesGrid tree={tree} />
-                <TreeCustomFieldsList values={tree.customFields} />
-                <TreePhotosStrip photos={tree.photos} />
+                {/* TREE — the tree's own identity (editable via the Edit button). */}
+                <TreeAttributesGrid tree={tree} variant="identity" />
+                <TreePhotosStrip
+                  treeId={selectedId ?? ''}
+                  photos={tree.photos}
+                  canEdit={canEdit}
+                  title={t('photos.treeTitle')}
+                  onChanged={() => {
+                    if (selectedId) utils.trees.get.invalidate({ id: selectedId });
+                  }}
+                />
+
+                {/* CURRENT ASSESSMENT — read-only mirror of the latest inspection;
+                    changed by logging an assessment, not by editing here. */}
+                <section className="space-y-3 border-t border-hairline pt-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
+                      {t('assess.current')}
+                      {' · '}
+                      <span className="text-ink">
+                        {tree.latestInspection
+                          ? new Date(tree.latestInspection.inspectedOn).toLocaleDateString()
+                          : t('assess.notInspected')}
+                      </span>
+                    </h3>
+                    {canEdit ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setAssessing(true)}
+                        className="shrink-0"
+                      >
+                        <PlusIcon size={14} />
+                        {t('assess.update')}
+                      </Button>
+                    ) : null}
+                  </div>
+                  <TreeAttributesGrid tree={tree} variant="assessment" />
+                  <TreeCustomFieldsList values={tree.customFields} />
+                  {tree.latestInspection && tree.latestInspection.photos.length > 0 ? (
+                    <TreePhotosStrip
+                      treeId={selectedId ?? ''}
+                      photos={tree.latestInspection.photos}
+                      canEdit={false}
+                      compact
+                      title={t('photos.evidence')}
+                      onChanged={() => {}}
+                    />
+                  ) : null}
+                </section>
               </div>
             ) : tab === 'history' ? (
               <TreeHistory treeId={selectedId ?? ''} />
