@@ -26,10 +26,19 @@ import { TreeComposerDrawer } from '@/components/trees/TreeComposerDrawer';
  * Project map. The active org + project are pinned to cookies by middleware
  * (from these URL slugs), so every tRPC query/mutation resolves to this
  * project. Data loaders take no project arg — the server scopes by the cookie.
+ *
+ * Keyed on the project slug so switching projects remounts the map: it refetches
+ * trees and re-runs the opening view (fit-to-project) instead of stranding you
+ * on the previous project's camera.
  */
-export default function ProjectMapPage() {
+export default async function ProjectMapPage({
+  params,
+}: {
+  params: Promise<{ slug: string; projectSlug: string }>;
+}) {
+  const { projectSlug } = await params;
   return (
-    <MapShell initialCenter={{ lng: 4.4634, lat: 52.1741 }} initialZoom={15}>
+    <MapShell key={projectSlug} initialCenter={{ lng: 4.4634, lat: 52.1741 }} initialZoom={15}>
       <FloatingTopBar />
       <MapCompass />
       <CursorCoordReadout />
