@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { useSelection } from '@/components/map/SelectionContext';
@@ -36,6 +37,13 @@ export function TreeDetailDrawer() {
   const t = useT();
   const canEdit = can('editor');
   const isMoving = !!selectedId && move.movingId === selectedId;
+
+  // Printable report — only reachable with a project in the URL (project map).
+  const params = useParams<{ slug?: string; projectSlug?: string }>();
+  const reportHref =
+    selectedId && params?.slug && params?.projectSlug
+      ? `/orgs/${params.slug}/projects/${params.projectSlug}/trees/${selectedId}/report`
+      : undefined;
 
   // Drop out of edit / collapse the log when a different tree opens.
   useEffect(() => {
@@ -114,6 +122,8 @@ export function TreeDetailDrawer() {
             commonName={tree.commonName}
             scientificName={tree.scientificName}
             onClose={close}
+            reportHref={reportHref}
+            reportLabel={t('report.open')}
           />
 
           <div className="mt-3 flex-1 overflow-y-auto">

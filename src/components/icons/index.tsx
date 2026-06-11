@@ -95,6 +95,14 @@ export const UserIcon = makeIcon(
   </>,
 );
 
+export const PrinterIcon = makeIcon(
+  <>
+    <path d="M6 9V3h12v6" />
+    <path d="M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" />
+    <rect x="6" y="14" width="12" height="7" rx="1" />
+  </>,
+);
+
 export const TreeIcon = makeIcon(
   <>
     <path d="M12 22v-7" />
