@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Marker } from 'maplibre-gl';
 import { IconButton } from '@/components/ui/IconButton';
 import { LocateIcon } from '@/components/icons';
+import { cn } from '@/lib/cn';
 import { useMap } from './MapContext';
 import { useT } from '@/lib/i18n/LocaleProvider';
 
@@ -17,14 +18,17 @@ function markerEl(): HTMLDivElement {
 }
 
 /**
- * Shows the user's live position as an always-on dot (watchPosition), and acts
- * as a "focus on me" button: tap to recenter the map on the current position.
- * The GPS watch is paused while the tab is hidden, to save battery.
+ * The user's live position as an always-on dot (watchPosition). Tap the locate
+ * button to recenter on it and *follow* as they move; a manual pan stops the
+ * follow (so it never yanks the map back), and tapping again resumes. The GPS
+ * watch is paused while the tab is hidden, to save battery.
  */
 export function UserLocationButton({ onActivate }: { onActivate?: () => void }) {
   const { map } = useMap();
   const t = useT();
   const posRef = useRef<{ lng: number; lat: number } | null>(null);
+  const followingRef = useRef(false);
+  const [following, setFollowing] = useState(false);
 
   useEffect(() => {
     if (!map) return;
@@ -43,6 +47,17 @@ export function UserLocationButton({ onActivate }: { onActivate?: () => void }) 
           if (!added) {
             marker.addTo(map);
             added = true;
+          }
+          // Following: keep the dot in view, recentering only once it nears the
+          // edge so it doesn't jitter while standing still.
+          if (followingRef.current) {
+            const p = map.project([lng, lat]);
+            const c = map.getContainer();
+            const mx = c.clientWidth * 0.25;
+            const my = c.clientHeight * 0.25;
+            if (p.x < mx || p.x > c.clientWidth - mx || p.y < my || p.y > c.clientHeight - my) {
+              map.easeTo({ center: [lng, lat], duration: 600, essential: true });
+            }
           }
         },
         (err) => {
@@ -64,9 +79,18 @@ export function UserLocationButton({ onActivate }: { onActivate?: () => void }) 
     const onVisibility = () => (document.hidden ? stop() : start());
     document.addEventListener('visibilitychange', onVisibility);
 
+    // A manual pan stops following (dragstart only fires for user drags, not the
+    // programmatic recenters above), so we never fight the user.
+    const onDrag = () => {
+      followingRef.current = false;
+      setFollowing(false);
+    };
+    map.on('dragstart', onDrag);
+
     return () => {
       stop();
       document.removeEventListener('visibilitychange', onVisibility);
+      map.off('dragstart', onDrag);
       marker.remove();
     };
   }, [map]);
@@ -79,6 +103,8 @@ export function UserLocationButton({ onActivate }: { onActivate?: () => void }) 
       window.alert(t('controls.locationUnavailable'));
       return;
     }
+    followingRef.current = true;
+    setFollowing(true);
     map.easeTo({
       center: [pos.lng, pos.lat],
       zoom: Math.max(map.getZoom(), 17),
@@ -91,7 +117,8 @@ export function UserLocationButton({ onActivate }: { onActivate?: () => void }) 
       label={t('controls.location')}
       onClick={recenter}
       disabled={!map}
-      className="rounded-full text-accent"
+      aria-pressed={following}
+      className={cn('rounded-full text-accent', following && 'bg-paper')}
     >
       <LocateIcon size={16} />
     </IconButton>
