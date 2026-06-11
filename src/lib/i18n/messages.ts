@@ -45,6 +45,7 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'controls.menu': 'Menu',
     'controls.location': 'My location',
+    'controls.locationUnavailable': "Couldn't get your location — check location permissions.",
     'menu.map': 'Map',
     'controls.layers': 'Layers',
     'controls.filters': 'Filters',
@@ -274,6 +275,7 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'controls.menu': 'Menu',
     'controls.location': 'Mijn locatie',
+    'controls.locationUnavailable': 'Kon je locatie niet bepalen — controleer de locatierechten.',
     'menu.map': 'Kaart',
     'controls.layers': 'Lagen',
     'controls.filters': 'Filters',

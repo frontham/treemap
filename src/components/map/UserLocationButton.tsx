@@ -1,147 +1,97 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Marker } from 'maplibre-gl';
 import { IconButton } from '@/components/ui/IconButton';
 import { LocateIcon } from '@/components/icons';
-import { cn } from '@/lib/cn';
 import { useMap } from './MapContext';
 import { useT } from '@/lib/i18n/LocaleProvider';
 
-type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
-type OrientationPermissionApi = { requestPermission?: () => Promise<'granted' | 'denied'> };
-
-/** Blue dot + a fading heading "beam", like Google Maps. The dot is the centre;
- *  the beam points the way the device is facing (hidden until a heading is known). */
+/** A simple blue "you are here" dot. */
 function markerEl(): HTMLDivElement {
   const el = document.createElement('div');
-  el.style.cssText = 'width:48px;height:48px;pointer-events:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5));';
-  el.innerHTML =
-    '<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-    '<defs><linearGradient id="ulBeam" x1="24" y1="24" x2="24" y2="3" gradientUnits="userSpaceOnUse">' +
-    '<stop offset="0" stop-color="#2563eb" stop-opacity="0.5"/>' +
-    '<stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs>' +
-    '<path class="ul-beam" d="M24 24 L9 6 Q24 0 39 6 Z" fill="url(#ulBeam)" style="display:none"/>' +
-    '<circle cx="24" cy="24" r="8" fill="#2563eb" stroke="#fff" stroke-width="3"/>' +
-    '</svg>';
+  el.style.cssText =
+    'width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;' +
+    'box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:none;';
   return el;
 }
 
 /**
- * Toggle in the control cluster that shows the user's live position and keeps
- * it updated as they move (watchPosition), plus a heading beam from the device
- * compass. Recenters once on enable. Tap again to hide.
+ * Shows the user's live position as an always-on dot (watchPosition), and acts
+ * as a "focus on me" button: tap to recenter the map on the current position.
+ * The GPS watch is paused while the tab is hidden, to save battery.
  */
 export function UserLocationButton({ onActivate }: { onActivate?: () => void }) {
   const { map } = useMap();
   const t = useT();
-  const [on, setOn] = useState(false);
+  const posRef = useRef<{ lng: number; lat: number } | null>(null);
 
   useEffect(() => {
-    if (!map || !on) return;
+    if (!map) return;
 
-    const marker = new Marker({
-      element: markerEl(),
-      anchor: 'center',
-      rotationAlignment: 'map',
-      pitchAlignment: 'map',
-    });
-    const beam = marker.getElement().querySelector('.ul-beam') as SVGElement | null;
+    const marker = new Marker({ element: markerEl(), anchor: 'center' });
     let added = false;
-    let recentered = false;
-    let following = true;
+    let watchId: number | null = null;
 
-    const setHeading = (deg: number) => {
-      marker.setRotation(deg);
-      if (beam) beam.style.display = '';
-    };
-
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { longitude: lng, latitude: lat, heading } = pos.coords;
-        marker.setLngLat([lng, lat]);
-        if (!added) {
-          marker.addTo(map);
-          added = true;
-        }
-        if (!recentered) {
-          map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 17), essential: true });
-          recentered = true;
-        } else if (following) {
-          // Keep the dot in view as you move — but only when it nears the edge,
-          // so it doesn't wobble while standing still or fight a manual pan.
-          const p = map.project([lng, lat]);
-          const el = map.getContainer();
-          const mx = el.clientWidth * 0.25;
-          const my = el.clientHeight * 0.25;
-          if (p.x < mx || p.x > el.clientWidth - mx || p.y < my || p.y > el.clientHeight - my) {
-            map.easeTo({ center: [lng, lat], duration: 600, essential: true });
+    const start = () => {
+      if (watchId != null) return;
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { longitude: lng, latitude: lat } = pos.coords;
+          posRef.current = { lng, lat };
+          marker.setLngLat([lng, lat]);
+          if (!added) {
+            marker.addTo(map);
+            added = true;
           }
-        }
-        // coords.heading is only present while moving; the compass below is preferred.
-        if (heading != null && !Number.isNaN(heading)) setHeading(heading);
-      },
-      (err) => {
-        // eslint-disable-next-line no-console
-        console.error('[user-location]', err);
-        if (err.code === err.PERMISSION_DENIED) {
-          window.alert('Location permission is needed to show your position.');
-          setOn(false);
-        }
-      },
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 15_000 },
-    );
-
-    const onOrient = (e: Event) => {
-      const ev = e as CompassEvent;
-      let h: number | null = null;
-      if (typeof ev.webkitCompassHeading === 'number') h = ev.webkitCompassHeading; // iOS, from north
-      else if (ev.absolute && ev.alpha != null) h = 360 - ev.alpha; // Android absolute
-      if (h != null && !Number.isNaN(h)) setHeading(((h % 360) + 360) % 360);
+        },
+        (err) => {
+          // eslint-disable-next-line no-console
+          console.error('[user-location]', err); // surfaced on demand via recenter()
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 15_000 },
+      );
     };
-    window.addEventListener('deviceorientationabsolute', onOrient);
-    window.addEventListener('deviceorientation', onOrient);
-
-    // A manual pan stops auto-follow (dragstart only fires for user drags, not
-    // programmatic camera moves), so we never yank the map back under them.
-    const onDragStart = () => {
-      following = false;
+    const stop = () => {
+      if (watchId != null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
     };
-    map.on('dragstart', onDragStart);
+
+    start();
+    // Battery: don't keep the GPS running while the tab/app is backgrounded.
+    const onVisibility = () => (document.hidden ? stop() : start());
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      navigator.geolocation.clearWatch(watchId);
-      window.removeEventListener('deviceorientationabsolute', onOrient);
-      window.removeEventListener('deviceorientation', onOrient);
-      map.off('dragstart', onDragStart);
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
       marker.remove();
     };
-  }, [map, on]);
+  }, [map]);
 
-  const toggle = async () => {
-    onActivate?.(); // let the cluster close any open layers/filters card
-    if (on) {
-      setOn(false);
+  const recenter = () => {
+    onActivate?.(); // let the cluster close any open card
+    if (!map) return;
+    const pos = posRef.current;
+    if (!pos) {
+      window.alert(t('controls.locationUnavailable'));
       return;
     }
-    // iOS 13+ requires requesting orientation permission from a user gesture.
-    const doe = window.DeviceOrientationEvent as unknown as OrientationPermissionApi | undefined;
-    if (doe && typeof doe.requestPermission === 'function') {
-      try {
-        await doe.requestPermission();
-      } catch {
-        /* heading just won't show; position still works */
-      }
-    }
-    setOn(true);
+    map.easeTo({
+      center: [pos.lng, pos.lat],
+      zoom: Math.max(map.getZoom(), 17),
+      essential: true,
+    });
   };
 
   return (
     <IconButton
-      label={on ? t('controls.hideLocation') : t('controls.showLocation')}
-      onClick={toggle}
+      label={t('controls.location')}
+      onClick={recenter}
       disabled={!map}
-      className={cn('rounded-full text-accent', on && 'bg-paper')}
+      className="rounded-full text-accent"
     >
       <LocateIcon size={16} />
     </IconButton>
