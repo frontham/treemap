@@ -231,7 +231,6 @@ export const messages: Record<Locale, Record<string, string>> = {
     'import.fieldMappingDesc': 'Map custom fields onto standard fields, then apply to existing trees.',
     'import.applyExisting': 'Apply to existing trees',
     'import.applying': 'Applying…',
-    'import.autoNumber': 'Auto-number new trees',
   },
   nl: {
     'common.cancel': 'Annuleren',
@@ -458,6 +457,5 @@ export const messages: Record<Locale, Record<string, string>> = {
     'import.fieldMappingDesc': 'Wijs aangepaste velden toe aan standaardvelden en pas toe op bestaande bomen.',
     'import.applyExisting': 'Toepassen op bestaande bomen',
     'import.applying': 'Toepassen…',
-    'import.autoNumber': 'Nieuwe bomen automatisch nummeren',
   },
 };

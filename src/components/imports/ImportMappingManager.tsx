@@ -38,7 +38,6 @@ export function ImportMappingManager() {
   const utils = trpc.useUtils();
   const { data: defs = [] } = trpc.customFields.list.useQuery();
   const { data: saved } = trpc.imports.mapping.useQuery();
-  const { data: options } = trpc.imports.options.useQuery();
 
   const [cols, setCols] = useState<Record<string, ColMap>>({});
   const [ready, setReady] = useState(false);
@@ -65,10 +64,6 @@ export function ImportMappingManager() {
     },
     onError: (e) => window.alert(e.message),
   });
-  const setAutoNumber = trpc.imports.setAutoNumber.useMutation({
-    onSuccess: () => utils.imports.options.invalidate(),
-  });
-
   if (!can('admin')) return null;
 
   const buildMapping = () => ({
@@ -128,16 +123,6 @@ export function ImportMappingManager() {
       ) : (
         <p className="mt-3 text-xs text-muted">{t('cf.none')}</p>
       )}
-
-      <label className="mt-4 flex items-center gap-2 text-sm text-ink">
-        <input
-          type="checkbox"
-          checked={!!options?.autoNumber}
-          onChange={(e) => setAutoNumber.mutate({ autoNumber: e.target.checked })}
-          className="h-4 w-4 rounded border-hairline text-accent focus:ring-accent"
-        />
-        {t('import.autoNumber')}
-      </label>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button size="sm" onClick={() => saveMapping.mutate(buildMapping())} disabled={saveMapping.isPending}>
