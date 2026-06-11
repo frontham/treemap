@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LayersIcon, FiltersIcon } from '@/components/icons';
 import { IconButton } from '@/components/ui/IconButton';
 import { UserLocationButton } from '@/components/map/UserLocationButton';
+import { FitProjectButton } from '@/components/map/FitProjectButton';
 import { BasemapSwitcher } from '@/components/map/BasemapSwitcher';
 import { useTreeFilter } from '@/components/map/TreeFilterContext';
 import { LayersPanel } from '@/components/overlays/LayersPanel';
@@ -67,6 +68,7 @@ export function FloatingControlCluster() {
             ) : null}
           </IconButton>
           <BasemapSwitcher onActivate={() => setPanel(null)} />
+          <FitProjectButton onActivate={() => setPanel(null)} />
           <UserLocationButton onActivate={() => setPanel(null)} />
         </div>
       </div>

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { LngLatBounds } from 'maplibre-gl';
 import { useMap } from './MapContext';
 import { trpc } from '@/lib/trpc/client';
+import { fitToTrees } from './fitToTrees';
 
 /**
  * Sets the opening view once per map mount (i.e. per project): fit to the
@@ -20,20 +20,7 @@ export function MapInitialView() {
     if (!map || isPending || done.current) return;
     done.current = true;
 
-    const bounds = new LngLatBounds();
-    for (const f of data?.features ?? []) {
-      const [lng, lat] = f.geometry.coordinates;
-      if (typeof lng === 'number' && typeof lat === 'number') bounds.extend([lng, lat]);
-    }
-
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, {
-        padding: { top: 80, bottom: 48, left: 48, right: 48 },
-        maxZoom: 17,
-        duration: 600,
-      });
-      return;
-    }
+    if (fitToTrees(map, data?.features ?? [])) return;
 
     // Empty project → center on the user instead.
     if ('geolocation' in navigator) {
