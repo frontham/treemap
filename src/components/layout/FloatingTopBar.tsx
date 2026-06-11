@@ -2,7 +2,6 @@
 
 import { TreeSearch } from '@/components/map/TreeSearch';
 import { AddTreeButton } from '@/components/map/AddTreeButton';
-import { DataMenu } from './DataMenu';
 import { MapToolsMenu } from './MapToolsMenu';
 import { PendingIndicator } from './PendingIndicator';
 import { ProjectSwitcher } from './ProjectSwitcher';
@@ -27,12 +26,9 @@ export function FloatingTopBar() {
 
       <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
         <PendingIndicator />
-        {/* Mobile uses the same desktop chrome for now (the folded MobileMenu is
-            kept for a later mobile pass). */}
-        <div className="flex items-center gap-2">
-          <DataMenu />
-          {canEdit ? <MapToolsMenu /> : null}
-        </div>
+        {/* Same desktop chrome on every size for now; export/import lives on the
+            project settings page. (MobileMenu kept for a later mobile pass.) */}
+        {canEdit ? <MapToolsMenu /> : null}
         {canEdit ? <AddTreeButton /> : null}
         <UserMenu />
       </div>

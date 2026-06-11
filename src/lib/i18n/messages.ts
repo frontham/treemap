@@ -25,6 +25,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'search.noResults': 'No matching trees',
 
     'data.menu': 'Data',
+    'data.export': 'Export',
+    'data.import': 'Import',
     'data.exportGeojson': 'Export as GeoJSON',
     'data.exportCsv': 'Export as CSV',
     'data.importGeojson': 'Import GeoJSON…',
@@ -253,6 +255,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'search.noResults': 'Geen bomen gevonden',
 
     'data.menu': 'Gegevens',
+    'data.export': 'Exporteren',
+    'data.import': 'Importeren',
     'data.exportGeojson': 'Exporteren als GeoJSON',
     'data.exportCsv': 'Exporteren als CSV',
     'data.importGeojson': 'GeoJSON importeren…',

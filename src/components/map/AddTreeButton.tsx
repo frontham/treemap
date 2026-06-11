@@ -20,7 +20,8 @@ export function AddTreeButton() {
       className="rounded-full shadow-floating"
     >
       {active ? <CloseIcon size={14} /> : <PlusIcon size={14} />}
-      {active ? t('common.cancel') : t('addTree.tree')}
+      {/* Icon-only on mobile; label from sm up. */}
+      <span className="hidden sm:inline">{active ? t('common.cancel') : t('addTree.tree')}</span>
     </Button>
   );
 }

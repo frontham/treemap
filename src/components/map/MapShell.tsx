@@ -44,7 +44,9 @@ export function MapShell({ initialCenter, initialZoom, children }: Props) {
                   <TreeFilterProvider>
                     <AlignProvider>
                       <TreeMoveProvider>
-                        <main className="relative h-screen w-screen overflow-hidden bg-paper">
+                        {/* 100dvh (not 100vh) so the bottom controls aren't hidden
+                            behind the mobile browser's chrome bar. */}
+                        <main className="relative h-[100dvh] w-screen overflow-hidden bg-paper">
                           <div ref={containerRef} className="h-full w-full" />
                           {error ? <MapErrorOverlay message={error} /> : null}
                           {children}

@@ -3,6 +3,7 @@ import type { Route } from 'next';
 import { CustomFieldsManager } from '@/components/customFields/CustomFieldsManager';
 import { InspectionMappingManager } from '@/components/inspections/InspectionMappingManager';
 import { ImportMappingManager } from '@/components/imports/ImportMappingManager';
+import { ProjectDataActions } from '@/components/projects/ProjectDataActions';
 import { ProjectAdminActions } from '@/components/projects/ProjectAdminActions';
 import { getServerT } from '@/lib/i18n/server';
 
@@ -26,6 +27,7 @@ export default async function ProjectSettingsPage({
           <h1 className="mt-2 text-xl font-semibold text-ink">{t('projects.settings')}</h1>
         </div>
         <CustomFieldsManager />
+        <ProjectDataActions />
         <ImportMappingManager />
         <InspectionMappingManager />
         <ProjectAdminActions />

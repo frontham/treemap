@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { ChevronDownIcon } from '@/components/icons';
+import { ChevronDownIcon, ToolsIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useRole } from '@/components/auth/useRole';
 import { useAlign, type CalibrateTool } from '@/components/map/AlignContext';
@@ -43,10 +43,13 @@ export function MapToolsMenu() {
         type="button"
         variant="secondary"
         onClick={() => setOpen((v) => !v)}
+        aria-label={t('tools.menu')}
         className={cn('rounded-full shadow-floating', (open || tool !== 'none') && 'bg-paper')}
       >
-        {t('tools.menu')}
-        <ChevronDownIcon size={14} className="text-muted" />
+        {/* Icon-only on mobile; "Tools ▾" from sm up. */}
+        <ToolsIcon size={16} className="sm:hidden" />
+        <span className="hidden sm:inline">{t('tools.menu')}</span>
+        <ChevronDownIcon size={14} className="hidden text-muted sm:inline" />
       </Button>
 
       {open ? (
