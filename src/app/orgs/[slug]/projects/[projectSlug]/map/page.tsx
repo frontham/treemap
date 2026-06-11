@@ -2,6 +2,7 @@ import { FloatingTopBar } from '@/components/layout/FloatingTopBar';
 import { FloatingControlCluster } from '@/components/layout/FloatingControlCluster';
 import { MapShell } from '@/components/map/MapShell';
 import { CursorCoordReadout } from '@/components/map/CursorCoordReadout';
+import { MapCompass } from '@/components/map/MapCompass';
 import { PinLegend } from '@/components/map/PinLegend';
 import { TreesLoader } from '@/components/map/TreesLoader';
 import { MapInitialView } from '@/components/map/MapInitialView';
@@ -30,6 +31,7 @@ export default function ProjectMapPage() {
   return (
     <MapShell initialCenter={{ lng: 4.4634, lat: 52.1741 }} initialZoom={15}>
       <FloatingTopBar />
+      <MapCompass />
       <CursorCoordReadout />
       <PinLegend />
       <FloatingControlCluster />
