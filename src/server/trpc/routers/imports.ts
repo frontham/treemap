@@ -202,24 +202,6 @@ export const importsRouter = router({
     return { ok: true };
   }),
 
-  /** Whether new trees auto-increment a per-project tree number. */
-  options: projectProcedure.query(async ({ ctx }) => {
-    const res = await ctx.tx.execute(sql`
-      SELECT auto_number AS "autoNumber" FROM projects WHERE id = current_project_id()
-    `);
-    return { autoNumber: !!(res.rows[0] as { autoNumber: boolean } | undefined)?.autoNumber };
-  }),
-
-  setAutoNumber: adminProcedure
-    .input(z.object({ autoNumber: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.tx.execute(sql`
-        UPDATE projects SET auto_number = ${input.autoNumber}
-        WHERE id = current_project_id() AND org_id = current_org_id()
-      `);
-      return { ok: true };
-    }),
-
   /** Apply the saved mapping to existing trees: backfill standard fields from
    *  each tree's custom_fields (same transforms as import). Copies, re-runnable. */
   remapExisting: adminProcedure.mutation(async ({ ctx }) => {

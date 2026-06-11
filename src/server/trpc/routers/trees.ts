@@ -497,11 +497,12 @@ export const treesRouter = router({
         ${input.condition ?? 'unknown'},
         ${input.risk ?? 'unknown'}::tree_risk,
         ${input.nextInspectionOn ?? null}::date,
+        -- Always assign the next per-project number (MAX+1) when one wasn't
+        -- supplied (e.g. on import). Unique and always-incrementing; the partial
+        -- unique index on (project_id, tree_no) is the backstop.
         COALESCE(
           ${input.treeNo ?? null},
-          CASE WHEN (SELECT auto_number FROM projects WHERE id = current_project_id())
-               THEN (SELECT COALESCE(MAX(tree_no), 0) + 1 FROM trees WHERE project_id = current_project_id())
-               ELSE NULL END
+          (SELECT COALESCE(MAX(tree_no), 0) + 1 FROM trees WHERE project_id = current_project_id())
         ),
         ${input.dbhCm ?? null},
         ${input.heightM ?? null},
