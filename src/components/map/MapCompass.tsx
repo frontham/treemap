@@ -52,19 +52,44 @@ export function MapCompass() {
     };
   }, [map]);
 
-  // While following, drive the map bearing from the device heading.
+  // While following, drive the map bearing from the device heading — but
+  // cooperatively. We smooth the heading (sensors are jittery) and apply it from
+  // a rAF loop that *skips whenever the map is already moving* (a user pan/zoom
+  // or a programmatic animation like "fly to my location"). That way the compass
+  // never fights a gesture and never cancels an in-flight camera animation
+  // (setBearing would otherwise stop it), which also keeps the location dot from
+  // being swept off-screen.
   useEffect(() => {
     if (!map || !following) return;
+    let target: number | null = null;
     let gotHeading = false;
+    let raf = 0;
+
     const onOrient = (e: DeviceOrientationEvent) => {
       const heading = headingFromEvent(e);
       if (heading == null) return;
       gotHeading = true;
-      map.setBearing(heading);
+      if (target == null) target = heading;
+      else {
+        // Low-pass toward the new reading, shortest way round the circle.
+        const d = ((heading - target + 540) % 360) - 180;
+        target = (target + d * 0.5 + 360) % 360;
+      }
     };
     const evt =
       'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
     window.addEventListener(evt, onOrient as EventListener, true);
+
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (target == null || map.isMoving()) return;
+      const cur = map.getBearing();
+      const diff = ((target - cur + 540) % 360) - 180;
+      if (Math.abs(diff) < 1) return; // deadband — don't churn while ~stationary
+      map.setBearing(cur + diff * 0.25); // ease toward heading
+    };
+    raf = requestAnimationFrame(tick);
+
     // No reading arrives on devices without a compass (e.g. desktop) — back out.
     const timer = window.setTimeout(() => {
       if (!gotHeading) {
@@ -72,8 +97,10 @@ export function MapCompass() {
         window.alert(t('compass.unavailable'));
       }
     }, 2500);
+
     return () => {
       window.removeEventListener(evt, onOrient as EventListener, true);
+      cancelAnimationFrame(raf);
       window.clearTimeout(timer);
     };
   }, [map, following, t]);
