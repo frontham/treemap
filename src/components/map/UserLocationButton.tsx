@@ -118,7 +118,7 @@ export function UserLocationButton({ onActivate }: { onActivate?: () => void }) 
       onClick={recenter}
       disabled={!map}
       aria-pressed={following}
-      className={cn('rounded-full text-accent', following && 'bg-paper')}
+      className={cn('rounded-full', following && 'bg-paper text-accent')}
     >
       <LocateIcon size={16} />
     </IconButton>
