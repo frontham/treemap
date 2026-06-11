@@ -1,0 +1,35 @@
+/* A4 layout for the per-tree report. On screen the sheet renders as a paper
+   preview; in print the chrome disappears and @page owns the margins. */
+
+@page {
+  size: A4 portrait;
+  margin: 13mm 15mm;
+}
+
+.report-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 15mm 17mm;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgb(14 16 18 / 0.06),
+    0 12px 32px rgb(14 16 18 / 0.1);
+}
+
+/* Keep cards, figures and map frames on one page. */
+.report-block {
+  break-inside: avoid;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .report-sheet {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+}
