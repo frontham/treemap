@@ -45,14 +45,14 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'controls.menu': 'Menu',
     'controls.location': 'My location',
+    'controls.locationUnavailable': "Couldn't get your location — check location permissions.",
     'menu.map': 'Map',
     'controls.layers': 'Layers',
     'controls.filters': 'Filters',
     'controls.basemap': 'Base map',
     'controls.showLocation': 'Show my location',
     'controls.hideLocation': 'Hide my location',
-    'compass.label': 'Compass — tap to follow your heading',
-    'compass.unavailable': 'Compass not available on this device.',
+    'compass.label': 'Reset map to north',
 
     'layers.overlays': 'Overlays',
     'layers.empty': 'No overlays yet. Add one with Tools → Reference image.',
@@ -275,14 +275,14 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     'controls.menu': 'Menu',
     'controls.location': 'Mijn locatie',
+    'controls.locationUnavailable': 'Kon je locatie niet bepalen — controleer de locatierechten.',
     'menu.map': 'Kaart',
     'controls.layers': 'Lagen',
     'controls.filters': 'Filters',
     'controls.basemap': 'Achtergrondkaart',
     'controls.showLocation': 'Mijn locatie tonen',
     'controls.hideLocation': 'Mijn locatie verbergen',
-    'compass.label': 'Kompas — tik om je richting te volgen',
-    'compass.unavailable': 'Kompas niet beschikbaar op dit apparaat.',
+    'compass.label': 'Kaart op noord zetten',
 
     'layers.overlays': 'Lagen',
     'layers.empty': 'Nog geen lagen. Voeg er een toe via Gereedschap → Referentieafbeelding.',
