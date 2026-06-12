@@ -6,6 +6,7 @@ import { useAlign } from './AlignContext';
 import { Button } from '@/components/ui/Button';
 import { useRole } from '@/components/auth/useRole';
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import { applyRigid, solveSimilarity } from '@/lib/geo/rigidTransform';
 import {
   corners,
@@ -38,6 +39,7 @@ import { FitActions } from './referenceImage/FitActions';
  * Save overlay persists the image (downscaled) + corners to the overlays table.
  */
 export function ReferenceImageTool() {
+  const t = useT();
   const { map } = useMap();
   const { can } = useRole();
   const { tool, setTool, editingOverlay } = useAlign();
@@ -214,7 +216,9 @@ export function ReferenceImageTool() {
 
   return (
     <ReferenceImagePanel
-      title={editId ? `Edit: ${editingOverlay?.name}` : 'Reference image'}
+      title={
+        editId ? t('refimg.editTitle', { name: editingOverlay?.name ?? '' }) : t('tools.reference')
+      }
       onClose={closePanel}
     >
       <input
@@ -232,11 +236,9 @@ export function ReferenceImageTool() {
       {!hasImage ? (
         <>
           <Button size="sm" className="w-full" onClick={() => fileRef.current?.click()}>
-            Choose image…
+            {t('refimg.choose')}
           </Button>
-          <p className="mt-2 text-xs text-muted">
-            Pick a screenshot (e.g. satellite). It drops on the map under the pins.
-          </p>
+          <p className="mt-2 text-xs text-muted">{t('refimg.chooseHint')}</p>
         </>
       ) : (
         <>

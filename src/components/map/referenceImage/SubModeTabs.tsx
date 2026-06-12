@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/lib/i18n/LocaleProvider';
+
 export type SubMode = 'transform' | 'points';
 
 /** Two-tab toggle between move/resize and fit-by-points. */
@@ -10,6 +12,7 @@ export function SubModeTabs({
   value: SubMode;
   onChange: (m: SubMode) => void;
 }) {
+  const t = useT();
   const tab = (m: SubMode, label: string) => (
     <button
       onClick={() => onChange(m)}
@@ -20,8 +23,8 @@ export function SubModeTabs({
   );
   return (
     <div className="mb-2 grid grid-cols-2 gap-1 rounded bg-paper p-0.5 hairline">
-      {tab('transform', 'Move / resize')}
-      {tab('points', 'Fit by points')}
+      {tab('transform', t('refimg.modeTransform'))}
+      {tab('points', t('refimg.modePoints'))}
     </div>
   );
 }

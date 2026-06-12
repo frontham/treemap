@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/lib/i18n/LocaleProvider';
+
 /** Labelled 0–100% opacity slider for the dropped image. */
 export function OpacitySlider({
   value,
@@ -8,10 +10,11 @@ export function OpacitySlider({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const t = useT();
   return (
     <label className="mb-2 block">
       <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-muted">Opacity</span>
+        <span className="text-muted">{t('refimg.opacity')}</span>
         <span className="tabular-nums">{Math.round(value * 100)}%</span>
       </div>
       <input
