@@ -11,6 +11,7 @@ import { useRole } from '@/components/auth/useRole';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import { useClickOutside } from '@/lib/useClickOutside';
 import { LocaleSwitcher } from './LocaleSwitcher';
+import { BuildInfo } from './BuildInfo';
 
 /** Account button → dropdown with the signed-in user, members link, and logout. */
 export function UserMenu() {
@@ -77,6 +78,7 @@ export function UserMenu() {
           >
             {logout.isPending ? t('account.signingout') : t('account.signout')}
           </button>
+          <BuildInfo className="border-t border-hairline px-3 py-1.5" />
         </div>
       ) : null}
     </div>

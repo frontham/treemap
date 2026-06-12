@@ -272,6 +272,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'import.updated': 'Updated {count} trees.',
     'mapping.backfilled': 'Created {count} inspections from existing trees.',
 
+    'tree.createFailed': 'Couldn’t save tree: {message}',
     'insp.saveFailed': 'Couldn’t save inspection: {message}',
     'insp.deleteFailed': 'Couldn’t delete inspection: {message}',
     'tree.deleteConfirm': '“{name}” will be deleted. This can be restored from history.',
@@ -598,6 +599,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'import.updated': '{count} bomen bijgewerkt.',
     'mapping.backfilled': '{count} inspecties aangemaakt uit bestaande bomen.',
 
+    'tree.createFailed': 'Boom opslaan mislukt: {message}',
     'insp.saveFailed': 'Inspectie opslaan mislukt: {message}',
     'insp.deleteFailed': 'Inspectie verwijderen mislukt: {message}',
     'tree.deleteConfirm': '“{name}” wordt verwijderd. Dit kan via de geschiedenis worden hersteld.',

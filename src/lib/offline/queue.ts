@@ -4,6 +4,13 @@ export type PendingOp = {
   id: string;
   kind: 'trees.create';
   payload: unknown;
+  /**
+   * The project the op was queued under. The server pins writes to the
+   * cookie-active project, so an op may only drain while that same project is
+   * active — otherwise a tree queued in project A would land in project B.
+   * Optional because pre-scoping queue entries lack it (those drain as before).
+   */
+  projectId?: string;
   queuedAt: number;
 };
 

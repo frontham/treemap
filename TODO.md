@@ -17,8 +17,6 @@ and route **`loading.tsx`** for the map + org segments. Still missing per-contro
       only the org-level members page exists.
 - [ ] **Self-serve auth** — public signup, email invitation accept-flow, email verification, password reset
       (needs an email-sending service). Current auth is admin-provisioned only.
-- [ ] **Offline queue project scoping** — stamp the active `projectId` into queued `trees.create` payloads so a
-      tree queued under project A can't drain into project B after switching ([src/lib/offline/*](src/lib/offline/)).
 - [ ] **Org rename** — replace the hardcoded `demo` org slug with the real org name + slug (+ redirect).
 - [ ] **Tree photos → object storage** — photos currently store downscaled JPEG **data URLs** in
       `tree_photos.storage_key`/`thumbnail_key` ([processImage](src/lib/image/processImage.ts) +
