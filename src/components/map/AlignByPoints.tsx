@@ -78,12 +78,18 @@ export function AlignByPoints() {
     return { params: result.params, residuals, inlierIds, medRes: result.medianResidual };
   }, [cps, pivot]);
 
-  // Preview: push transformed (or original) features into the trees source.
+  // Preview: push transformed features into the trees source. The source is
+  // normally owned by TreesLoader — only touch it while actually previewing,
+  // and restore it exactly once when the preview ends (writing on every data
+  // change while closed would duplicate TreesLoader's work and clobber its
+  // dead-tree/filter view).
+  const previewed = useRef(false);
   useEffect(() => {
     if (!map || !data) return;
     const src = map.getSource(TREES_SOURCE) as GeoJSONSource | undefined;
     if (!src) return;
     if (active && previewing && fit) {
+      previewed.current = true;
       src.setData({
         ...data,
         features: data.features.map((f) => {
@@ -95,7 +101,8 @@ export function AlignByPoints() {
           return { ...f, geometry: { ...f.geometry, coordinates: [lng, lat] } };
         }),
       });
-    } else {
+    } else if (previewed.current) {
+      previewed.current = false;
       src.setData(data);
     }
   }, [map, data, active, previewing, fit]);

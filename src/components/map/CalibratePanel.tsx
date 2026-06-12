@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GeoJSONSource } from 'maplibre-gl';
 import { useMap } from './MapContext';
 import { TREES_SOURCE } from './treeLayer';
@@ -44,15 +44,24 @@ export function CalibratePanel() {
     return { lng: sx / feats.length, lat: sy / feats.length };
   }, [data]);
 
-  // Live preview: push transformed (or original) features into the trees source.
+  // Live preview: push transformed features into the trees source. The trees
+  // source is normally owned by TreesLoader — only touch it while an actual
+  // preview is showing, and restore it exactly once when the preview ends
+  // (writing on every data change while closed would duplicate TreesLoader's
+  // work and clobber its dead-tree/filter view).
+  const previewed = useRef(false);
   useEffect(() => {
     if (!map || !data) return;
     const src = map.getSource(TREES_SOURCE) as GeoJSONSource | undefined;
     if (!src) return;
     if (!active || !pivot || isIdentity({ dx, dy, angleDeg: deg, scale })) {
-      src.setData(data);
+      if (previewed.current) {
+        previewed.current = false;
+        src.setData(data);
+      }
       return;
     }
+    previewed.current = true;
     const params = { dx, dy, angleDeg: deg, scale, pivotLng: pivot.lng, pivotLat: pivot.lat };
     src.setData({
       ...data,
