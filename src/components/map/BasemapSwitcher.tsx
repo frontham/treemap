@@ -1,20 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useMap } from './MapContext';
-import { addTreeLayer } from './treeLayer';
-import {
-  BASEMAPS,
-  carryAppLayers,
-  getBasemap,
-  readStoredBasemapId,
-  storeBasemapId,
-  type BasemapId,
-} from './basemaps';
+import { useRef, useState } from 'react';
+import { type BasemapId } from './basemaps';
+import { BasemapList } from './BasemapList';
+import { useBasemapSelection } from './useBasemapSelection';
 import { IconButton } from '@/components/ui/IconButton';
 import { MapIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useClickOutside } from '@/lib/useClickOutside';
 
 /**
  * Basemap switcher in the floating control cluster. Swaps the MapLibre base
@@ -23,31 +17,16 @@ import { useT } from '@/lib/i18n/LocaleProvider';
  * choice is remembered in localStorage and applied on the next load.
  */
 export function BasemapSwitcher({ onActivate }: { onActivate?: () => void }) {
-  const { map } = useMap();
   const t = useT();
-  const [id, setId] = useState<BasemapId>(() => readStoredBasemapId());
+  const { basemapId: id, selectBasemap } = useBasemapSelection();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClick);
-    return () => window.removeEventListener('mousedown', onClick);
-  }, [open]);
+  useClickOutside(ref, () => setOpen(false), open);
 
   const select = (next: BasemapId) => {
     setOpen(false);
-    if (!map || next === id) return;
-    setId(next);
-    storeBasemapId(next);
-    // Default diff + transformStyle: only the base layers swap; our carried-over
-    // app layers diff as unchanged, so trees/overlays don't flicker.
-    map.setStyle(getBasemap(next).style, { transformStyle: carryAppLayers });
-    // Defensive: if the trees source somehow didn't carry, re-add it (idempotent).
-    map.once('styledata', () => addTreeLayer(map));
+    selectBasemap(next);
   };
 
   return (
@@ -68,25 +47,7 @@ export function BasemapSwitcher({ onActivate }: { onActivate?: () => void }) {
           <div className="sticky top-0 border-b border-hairline bg-paper px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted">
             {t('controls.basemap')}
           </div>
-          {BASEMAPS.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => select(b.id)}
-              className={cn(
-                'flex w-full items-start justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-panel',
-                b.id === id && 'bg-panel',
-              )}
-            >
-              <span className="min-w-0">
-                <span className={cn('block text-sm text-ink', b.id === id && 'font-medium')}>
-                  {b.label}
-                </span>
-                {b.note ? <span className="block text-xs text-muted">{b.note}</span> : null}
-              </span>
-              {b.id === id ? <span className="mt-0.5 shrink-0 text-xs text-accent">✓</span> : null}
-            </button>
-          ))}
+          <BasemapList value={id} onSelect={select} />
         </div>
       ) : null}
     </div>

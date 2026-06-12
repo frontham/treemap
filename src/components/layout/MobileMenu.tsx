@@ -1,33 +1,33 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import type { Route } from 'next';
 import { IconButton } from '@/components/ui/IconButton';
-import { MoreIcon } from '@/components/icons';
-import { useMap } from '@/components/map/MapContext';
-import { addTreeLayer } from '@/components/map/treeLayer';
 import {
-  BASEMAPS,
-  carryAppLayers,
-  getBasemap,
-  readStoredBasemapId,
-  storeBasemapId,
-  type BasemapId,
-} from '@/components/map/basemaps';
+  ActionRow,
+  BackHeader,
+  ControlRow,
+  Divider,
+  DrillRow,
+  LinkRow,
+  LinkRoute,
+  SectionLabel,
+} from '@/components/ui/menu';
+import { MoreIcon } from '@/components/icons';
+import { getBasemap } from '@/components/map/basemaps';
+import { BasemapList } from '@/components/map/BasemapList';
+import { useBasemapSelection } from '@/components/map/useBasemapSelection';
 import { UserLocationButton } from '@/components/map/UserLocationButton';
-import { PinColorControl } from '@/components/map/PinColorControl';
-import { DeadTreesControl } from '@/components/map/DeadTreesControl';
-import { TreeFilterControl } from '@/components/map/TreeFilterControl';
 import { useAlign, type CalibrateTool } from '@/components/map/AlignContext';
-import { OverlayRow } from '@/components/overlays/OverlayRow';
 import { useImport } from '@/components/imports/useImport';
 import { useRole } from '@/components/auth/useRole';
 import { trpc } from '@/lib/trpc/client';
 import { cn } from '@/lib/cn';
-import { useLocale, useT } from '@/lib/i18n/LocaleProvider';
-import { LOCALES, LOCALE_LABELS } from '@/lib/i18n/config';
+import { useT } from '@/lib/i18n/LocaleProvider';
+import { useClickOutside } from '@/lib/useClickOutside';
+import { LocaleSwitcher } from './LocaleSwitcher';
+import { LayersView } from './mobileMenu/LayersView';
 
 /**
  * Mobile-only "..." menu (the desktop top-bar buttons and bottom control cluster
@@ -37,18 +37,16 @@ import { LOCALES, LOCALE_LABELS } from '@/lib/i18n/config';
  */
 export function MobileMenu() {
   const t = useT();
-  const { map } = useMap();
   const { can, me, isOrgAdmin } = useRole();
   const { tool, setTool } = useAlign();
-  const { locale, setLocale } = useLocale();
   const router = useRouter();
   const utils = trpc.useUtils();
   const { openGeoJson, openCsv, importUi } = useImport();
   const { data: overlays = [] } = trpc.overlays.list.useQuery();
+  const { basemapId, selectBasemap } = useBasemapSelection();
 
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'root' | 'basemap' | 'layers'>('root');
-  const [basemapId, setBasemapId] = useState<BasemapId>(() => readStoredBasemapId());
   const rootRef = useRef<HTMLDivElement>(null);
 
   const canEdit = can('editor');
@@ -69,23 +67,7 @@ export function MobileMenu() {
     setView('root');
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) close();
-    };
-    window.addEventListener('mousedown', onClick);
-    return () => window.removeEventListener('mousedown', onClick);
-  }, [open]);
-
-  const selectBasemap = (next: BasemapId) => {
-    setView('root');
-    if (!map || next === basemapId) return;
-    setBasemapId(next);
-    storeBasemapId(next);
-    map.setStyle(getBasemap(next).style, { transformStyle: carryAppLayers });
-    map.once('styledata', () => addTreeLayer(map));
-  };
+  useClickOutside(rootRef, close, open);
 
   const pickTool = (next: CalibrateTool) => {
     setTool(tool === next ? 'none' : next);
@@ -110,52 +92,17 @@ export function MobileMenu() {
         {open ? (
           <div className="absolute right-0 mt-1.5 max-h-[70vh] w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto overflow-x-hidden rounded-lg bg-paper hairline shadow-floating">
             {view === 'layers' ? (
-              <>
-                <BackHeader label={t('controls.layers')} onBack={() => setView('root')} />
-                <div className="border-b border-hairline p-3">
-                  <PinColorControl />
-                </div>
-                <div className="border-b border-hairline p-3">
-                  <DeadTreesControl />
-                </div>
-                <div className="border-b border-hairline p-3">
-                  <TreeFilterControl />
-                </div>
-                <div className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wider text-muted">
-                  {t('layers.overlays')}
-                </div>
-                <div className="flex flex-col gap-1.5 p-2 pt-1">
-                  {overlays.length === 0 ? (
-                    <p className="px-1.5 py-3 text-center text-xs text-muted">{t('layers.empty')}</p>
-                  ) : (
-                    overlays.map((o) => <OverlayRow key={o.id} overlay={o} />)
-                  )}
-                </div>
-              </>
+              <LayersView overlays={overlays} onBack={() => setView('root')} />
             ) : view === 'basemap' ? (
               <>
                 <BackHeader label={t('controls.basemap')} onBack={() => setView('root')} />
-                {BASEMAPS.map((b) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => selectBasemap(b.id)}
-                    className={cn(
-                      'flex w-full items-start justify-between gap-2 px-3 py-2.5 text-left hover:bg-panel',
-                      b.id === basemapId && 'bg-panel',
-                    )}
-                  >
-                    <span className="min-w-0">
-                      <span className={cn('block text-sm text-ink', b.id === basemapId && 'font-medium')}>
-                        {b.label}
-                      </span>
-                      {b.note ? <span className="block text-xs text-muted">{b.note}</span> : null}
-                    </span>
-                    {b.id === basemapId ? (
-                      <span className="mt-0.5 shrink-0 text-xs text-accent">✓</span>
-                    ) : null}
-                  </button>
-                ))}
+                <BasemapList
+                  value={basemapId}
+                  onSelect={(id) => {
+                    setView('root');
+                    selectBasemap(id);
+                  }}
+                />
               </>
             ) : (
               <>
@@ -241,21 +188,7 @@ export function MobileMenu() {
                 ) : null}
                 <div className="px-3 py-2">
                   <p className="mb-1.5 text-xs text-muted">{t('account.language')}</p>
-                  <div className="grid grid-cols-2 gap-1 rounded bg-panel p-0.5 hairline">
-                    {LOCALES.map((l) => (
-                      <button
-                        key={l}
-                        type="button"
-                        onClick={() => setLocale(l)}
-                        className={cn(
-                          'rounded px-2 py-1 text-xs transition-colors',
-                          locale === l ? 'bg-paper font-medium text-ink' : 'text-muted hover:text-ink',
-                        )}
-                      >
-                        {LOCALE_LABELS[l]}
-                      </button>
-                    ))}
-                  </div>
+                  <LocaleSwitcher />
                 </div>
                 <ActionRow
                   label={logout.isPending ? t('account.signingout') : t('account.signout')}
@@ -267,115 +200,5 @@ export function MobileMenu() {
         ) : null}
       </div>
     </>
-  );
-}
-
-/** Sub-view header with a back affordance, returning to the root list. */
-function BackHeader({ label, onBack }: { label: string; onBack: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onBack}
-      className="flex w-full items-center gap-1.5 border-b border-hairline px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel"
-    >
-      <span className="text-muted">‹</span>
-      {label}
-    </button>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="px-3 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
-      {children}
-    </div>
-  );
-}
-
-function Divider() {
-  return <div className="mt-1 h-px bg-hairline" />;
-}
-
-/** A row whose right side hosts a self-contained control (e.g. the location toggle). */
-function ControlRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2">
-      <span className="text-sm text-ink">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-/** Full-width action; optionally shows an "on" marker when its tool/state is active. */
-function ActionRow({
-  label,
-  onClick,
-  active,
-}: {
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm text-ink transition-colors hover:bg-panel',
-        active && 'font-medium',
-      )}
-    >
-      {label}
-      {active ? <span className="text-xs text-accent">on</span> : null}
-    </button>
-  );
-}
-
-/** Full-width row that drills into a sub-view; shows the current value + chevron. */
-function DrillRow({ label, value, onClick }: { label: string; value: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm text-ink transition-colors hover:bg-panel"
-    >
-      {label}
-      <span className="flex min-w-0 items-center gap-1 text-muted">
-        <span className="min-w-0 truncate text-xs">{value}</span>
-        <span>›</span>
-      </span>
-    </button>
-  );
-}
-
-function LinkRow(
-  props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children: React.ReactNode },
-) {
-  return (
-    <a
-      download
-      {...props}
-      className="block px-3 py-2.5 text-sm text-ink transition-colors hover:bg-panel"
-    />
-  );
-}
-
-function LinkRoute({
-  href,
-  onClick,
-  children,
-}: {
-  href: Route;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="block px-3 py-2.5 text-sm text-ink transition-colors hover:bg-panel"
-    >
-      {children}
-    </Link>
   );
 }

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { trpc } from '@/lib/trpc/client';
 import { ChevronDownIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useClickOutside } from '@/lib/useClickOutside';
 
 const chrome =
   'inline-flex h-9 items-center gap-2 rounded-full px-3 bg-panel/85 ' +
@@ -26,14 +27,7 @@ export function ProjectSwitcher() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClick);
-    return () => window.removeEventListener('mousedown', onClick);
-  }, [open]);
+  useClickOutside(ref, () => setOpen(false), open);
 
   const orgSlug = me?.org?.slug;
   const current = projects.find((p) => p.id === me?.project?.id);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { LayersIcon, FiltersIcon } from '@/components/icons';
 import { IconButton } from '@/components/ui/IconButton';
 import { UserLocationButton } from '@/components/map/UserLocationButton';
@@ -12,6 +12,7 @@ import { FiltersPanel } from '@/components/overlays/FiltersPanel';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import { useHydrated } from '@/lib/useHydrated';
+import { useClickOutside } from '@/lib/useClickOutside';
 
 type Panel = 'layers' | 'filters';
 
@@ -32,14 +33,7 @@ export function FloatingControlCluster() {
 
   // Close the open card on a click anywhere outside it (the panel and the toggle
   // buttons are all inside `ref`, so interacting with either is safe).
-  useEffect(() => {
-    if (!panel) return;
-    const onMouseDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setPanel(null);
-    };
-    window.addEventListener('mousedown', onMouseDown);
-    return () => window.removeEventListener('mousedown', onMouseDown);
-  }, [panel]);
+  useClickOutside(ref, () => setPanel(null), panel !== null);
 
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? null : p));
 
