@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { useRole } from '@/components/auth/useRole';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 
 /** Rename / delete the active project. Org-admin only. */
 export function ProjectAdminActions() {
   const t = useT();
+  const { confirm } = useDialog();
   const router = useRouter();
   const utils = trpc.useUtils();
   const { me, isOrgAdmin } = useRole();
@@ -63,14 +65,13 @@ export function ProjectAdminActions() {
           variant="danger"
           className="mt-3"
           disabled={del.isPending}
-          onClick={() => {
-            if (
-              window.confirm(
-                `Delete project "${current.name}" and ALL its data? This cannot be undone.`,
-              )
-            ) {
-              del.mutate({ id: projectId });
-            }
+          onClick={async () => {
+            const ok = await confirm({
+              message: t('projects.deleteConfirm', { name: current.name }),
+              confirmLabel: t('projects.delete'),
+              danger: true,
+            });
+            if (ok) del.mutate({ id: projectId });
           }}
         >
           {del.isPending ? t('projects.deleting') : t('projects.delete')}

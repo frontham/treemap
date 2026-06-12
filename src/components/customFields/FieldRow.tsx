@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 import type { CustomFieldDefView } from '@/server/trpc/routers/customFields';
 import { hasOptions, parseOptions, type FieldType } from './fieldTypes';
 
@@ -20,6 +21,7 @@ export function FieldRow({
   onChanged: () => void;
 }) {
   const t = useT();
+  const { confirm } = useDialog();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(def.label);
   const [required, setRequired] = useState(def.required);
@@ -57,8 +59,13 @@ export function FieldRow({
               variant="ghost"
               size="sm"
               className="text-danger hover:bg-danger/10"
-              onClick={() => {
-                if (window.confirm(`Archive field "${def.label}"?`)) archive.mutate({ id: def.id });
+              onClick={async () => {
+                const ok = await confirm({
+                  message: t('cf.archiveConfirm', { label: def.label }),
+                  confirmLabel: t('cf.archive'),
+                  danger: true,
+                });
+                if (ok) archive.mutate({ id: def.id });
               }}
             >
               {t('cf.archive')}

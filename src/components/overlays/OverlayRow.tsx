@@ -6,6 +6,8 @@ import { isLayerVisible, resolveLayerOpacity, useLayers } from '@/components/map
 import { useAlign } from '@/components/map/AlignContext';
 import { useRole } from '@/components/auth/useRole';
 import { trpc } from '@/lib/trpc/client';
+import { useT } from '@/lib/i18n/LocaleProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 import type { OverlayView } from '@/server/trpc/routers/overlays';
 
 type Props = { overlay: OverlayView };
@@ -15,6 +17,8 @@ type Props = { overlay: OverlayView };
  * edit (reposition) · delete.
  */
 export function OverlayRow({ overlay }: Props) {
+  const t = useT();
+  const { confirm } = useDialog();
   const layers = useLayers();
   const { can } = useRole();
   const { editOverlay } = useAlign();
@@ -62,10 +66,13 @@ export function OverlayRow({ overlay }: Props) {
       <IconButton
         label={`Delete ${overlay.name}`}
         size="sm"
-        onClick={() => {
-          if (window.confirm(`Delete overlay "${overlay.name}"?`)) {
-            deleteOverlay.mutate({ id: overlay.id });
-          }
+        onClick={async () => {
+          const ok = await confirm({
+            message: t('overlays.deleteConfirm', { name: overlay.name }),
+            confirmLabel: t('common.delete'),
+            danger: true,
+          });
+          if (ok) deleteOverlay.mutate({ id: overlay.id });
         }}
         className="text-muted hover:bg-danger/10 hover:text-danger"
       >

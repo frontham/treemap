@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { useRole } from '@/components/auth/useRole';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 import { applyRigid, solveSimilarity } from '@/lib/geo/rigidTransform';
 import {
   corners,
@@ -40,6 +42,8 @@ import { FitActions } from './referenceImage/FitActions';
  */
 export function ReferenceImageTool() {
   const t = useT();
+  const toast = useToast();
+  const { prompt } = useDialog();
   const { map } = useMap();
   const { can } = useRole();
   const { tool, setTool, editingOverlay } = useAlign();
@@ -168,14 +172,18 @@ export function ReferenceImageTool() {
     onSuccess: () => {
       utils.overlays.list.invalidate();
       clearImage();
-      window.alert('Saved. It is now in the Layers panel (bottom-right).');
+      toast.success(t('refimg.saved'));
     },
-    onError: (e) => window.alert(`Save failed: ${e.message}`),
+    onError: (e) => toast.error(t('common.saveFailed', { message: e.message })),
   });
-  const doSave = () => {
+  const doSave = async () => {
     if (!transform.current || !saveUrlRef.current) return;
-    const name = window.prompt('Name this overlay', 'Reference image');
-    if (!name) return;
+    const name = await prompt({
+      message: t('refimg.namePrompt'),
+      defaultValue: t('tools.reference'),
+      confirmLabel: t('common.save'),
+    });
+    if (!name || !transform.current || !saveUrlRef.current) return;
     saveOverlay.mutate({
       name,
       storageKey: saveUrlRef.current,
@@ -190,7 +198,7 @@ export function ReferenceImageTool() {
       clearImage();
       setTool('none'); // closes the panel + clears editingOverlay → loader redraws at new corners
     },
-    onError: (e) => window.alert(`Update failed: ${e.message}`),
+    onError: (e) => toast.error(t('refimg.updateFailed', { message: e.message })),
   });
   const doUpdate = () => {
     if (!transform.current || !editId) return;

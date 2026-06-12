@@ -2,6 +2,8 @@
 
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { ImportMappingDialog, type ImportSource } from './ImportMappingDialog';
+import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
 
 /**
  * Shared file-import plumbing used by both the desktop Data menu and the mobile
@@ -15,6 +17,8 @@ export function useImport(): {
   openCsv: () => void;
   importUi: ReactNode;
 } {
+  const t = useT();
+  const toast = useToast();
   const geojsonInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
@@ -33,7 +37,7 @@ export function useImport(): {
       }
       setImportSource({ kind: 'geojson', features, columns: [...keys] });
     } catch (err) {
-      window.alert(`Couldn't parse GeoJSON: ${(err as Error).message}`);
+      toast.error(t('import.parseFailed', { message: (err as Error).message }));
     }
   };
 

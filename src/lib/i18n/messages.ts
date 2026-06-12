@@ -262,6 +262,28 @@ export const messages: Record<Locale, Record<string, string>> = {
     'report.notFound': 'Tree not found, or you don’t have access to it.',
 
     'common.saveFailed': 'Save failed: {message}',
+    'common.confirm': 'Confirm',
+
+    'cf.archiveConfirm': 'Archive field “{label}”?',
+
+    'import.done': 'Imported {imported} trees, skipped {skipped}.',
+    'import.failed': 'Import failed: {message}',
+    'import.parseFailed': 'Couldn’t parse GeoJSON: {message}',
+    'import.updated': 'Updated {count} trees.',
+    'mapping.backfilled': 'Created {count} inspections from existing trees.',
+
+    'insp.saveFailed': 'Couldn’t save inspection: {message}',
+    'insp.deleteFailed': 'Couldn’t delete inspection: {message}',
+    'tree.deleteConfirm': '“{name}” will be deleted. This can be restored from history.',
+    'overlays.deleteConfirm': 'Delete overlay “{name}”?',
+    'projects.deleteConfirm':
+      'Delete project “{name}” and ALL its data? This cannot be undone.',
+    'photos.deleteFailed': 'Couldn’t delete photo: {message}',
+    'compose.locationFailed': 'Couldn’t get your location. Check location permissions and try again.',
+
+    'refimg.saved': 'Saved. The overlay is now in the Layers panel (bottom-right).',
+    'refimg.updateFailed': 'Update failed: {message}',
+    'refimg.namePrompt': 'Name this overlay',
 
     'refimg.editTitle': 'Edit: {name}',
     'refimg.choose': 'Choose image…',
@@ -566,6 +588,29 @@ export const messages: Record<Locale, Record<string, string>> = {
     'report.notFound': 'Boom niet gevonden, of je hebt er geen toegang toe.',
 
     'common.saveFailed': 'Opslaan mislukt: {message}',
+    'common.confirm': 'Bevestigen',
+
+    'cf.archiveConfirm': 'Veld “{label}” archiveren?',
+
+    'import.done': '{imported} bomen geïmporteerd, {skipped} overgeslagen.',
+    'import.failed': 'Importeren mislukt: {message}',
+    'import.parseFailed': 'GeoJSON kon niet worden gelezen: {message}',
+    'import.updated': '{count} bomen bijgewerkt.',
+    'mapping.backfilled': '{count} inspecties aangemaakt uit bestaande bomen.',
+
+    'insp.saveFailed': 'Inspectie opslaan mislukt: {message}',
+    'insp.deleteFailed': 'Inspectie verwijderen mislukt: {message}',
+    'tree.deleteConfirm': '“{name}” wordt verwijderd. Dit kan via de geschiedenis worden hersteld.',
+    'overlays.deleteConfirm': 'Laag “{name}” verwijderen?',
+    'projects.deleteConfirm':
+      'Project “{name}” en AL zijn gegevens verwijderen? Dit kan niet ongedaan worden gemaakt.',
+    'photos.deleteFailed': 'Foto verwijderen mislukt: {message}',
+    'compose.locationFailed':
+      'Kon je locatie niet bepalen. Controleer de locatierechten en probeer opnieuw.',
+
+    'refimg.saved': 'Opgeslagen. Je vindt de laag in het Lagen-paneel (rechtsonder).',
+    'refimg.updateFailed': 'Bijwerken mislukt: {message}',
+    'refimg.namePrompt': 'Geef deze laag een naam',
 
     'refimg.editTitle': 'Bewerken: {name}',
     'refimg.choose': 'Afbeelding kiezen…',

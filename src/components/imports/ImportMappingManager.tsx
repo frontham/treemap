@@ -6,6 +6,7 @@ import { inputBase } from '@/components/forms/fields/FieldShell';
 import { trpc } from '@/lib/trpc/client';
 import { useRole } from '@/components/auth/useRole';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
 import { cn } from '@/lib/cn';
 
 type Transform = 'circumferenceToDbh' | 'yearToDate' | '';
@@ -35,6 +36,7 @@ const STANDARD_TARGETS: { value: string; key: string }[] = [
 export function ImportMappingManager() {
   const { can } = useRole();
   const t = useT();
+  const toast = useToast();
   const utils = trpc.useUtils();
   const { data: defs = [] } = trpc.customFields.list.useQuery();
   const { data: saved } = trpc.imports.mapping.useQuery();
@@ -55,14 +57,14 @@ export function ImportMappingManager() {
 
   const saveMapping = trpc.imports.setMapping.useMutation({
     onSuccess: () => utils.imports.mapping.invalidate(),
-    onError: (e) => window.alert(e.message),
+    onError: (e) => toast.error(e.message),
   });
   const remap = trpc.imports.remapExisting.useMutation({
     onSuccess: (r) => {
       utils.trees.list.invalidate();
-      window.alert(`Updated ${r.updated} tree${r.updated === 1 ? '' : 's'}.`);
+      toast.success(t('import.updated', { count: r.updated }));
     },
-    onError: (e) => window.alert(e.message),
+    onError: (e) => toast.error(e.message),
   });
   if (!can('admin')) return null;
 
