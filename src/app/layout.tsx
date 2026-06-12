@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
@@ -26,6 +26,14 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'TreeMap',
   description: 'Document trees on the map.',
+  applicationName: 'TreeMap',
+  // iOS has no install prompt (Safari share sheet → Add to Home Screen) and
+  // reads these instead of most manifest fields.
+  appleWebApp: { capable: true, title: 'TreeMap', statusBarStyle: 'default' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#FAFAF7',
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
