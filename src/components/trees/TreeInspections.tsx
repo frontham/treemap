@@ -6,18 +6,14 @@ import { IconButton } from '@/components/ui/IconButton';
 import { PlusIcon, EditIcon, TrashIcon } from '@/components/icons';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useDateFormatter } from '@/lib/i18n/useDateFormatter';
+import { formatFieldValue, nonEmptyFieldEntries } from '@/lib/fieldValues';
 import type { TreeView } from './TreeView';
 import { TreePhotosStrip } from './TreePhotosStrip';
 import { InspectionForm, type InspectionFormValues } from '@/components/forms/InspectionForm';
 import type { InspectionView } from '@/server/trpc/routers/inspections';
 
 type Props = { treeId: string; tree: TreeView; canEdit: boolean };
-
-function formatVal(v: unknown): string {
-  if (Array.isArray(v)) return v.join(', ');
-  if (v != null && typeof v === 'object') return JSON.stringify(v);
-  return String(v);
-}
 
 /** Collapsible list of the inspection's captured fields (the snapshot). */
 function InspectionDetails({
@@ -29,9 +25,7 @@ function InspectionDetails({
   labelFor: (k: string) => string;
   summary: string;
 }) {
-  const entries = Object.entries(fields).filter(
-    ([, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0),
-  );
+  const entries = nonEmptyFieldEntries(fields);
   if (entries.length === 0) return null;
   return (
     <details className="mt-2">
@@ -40,7 +34,7 @@ function InspectionDetails({
         {entries.map(([k, v]) => (
           <Fragment key={k}>
             <dt className="text-muted">{labelFor(k)}</dt>
-            <dd className="break-words text-ink">{formatVal(v)}</dd>
+            <dd className="break-words text-ink">{formatFieldValue(v)}</dd>
           </Fragment>
         ))}
       </dl>
@@ -51,6 +45,7 @@ function InspectionDetails({
 /** Inspections tab: dated assessment log + create / edit / delete. */
 export function TreeInspections({ treeId, tree, canEdit }: Props) {
   const t = useT();
+  const fmtDate = useDateFormatter('short');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<InspectionView | null>(null);
   const utils = trpc.useUtils();
@@ -137,9 +132,7 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
             <li key={i.id} className="rounded-lg p-3 hairline bg-panel/40">
               <div className="mb-1 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <time className="text-sm font-medium text-ink">
-                    {new Date(i.inspectedOn).toLocaleDateString()}
-                  </time>
+                  <time className="text-sm font-medium text-ink">{fmtDate(i.inspectedOn)}</time>
                   {idx === 0 ? (
                     <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">
                       {t('assess.currentTag')}

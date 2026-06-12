@@ -38,6 +38,11 @@ function dataUrlBytes(dataUrl: string): number {
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 }
 
+/** Draw `img` scaled to fit `maxDim` and return a JPEG data URL (no dimensions). */
+export function downscaleToJpeg(img: HTMLImageElement, maxDim: number, quality: number): string {
+  return render(img, maxDim, quality).url;
+}
+
 /** Draw `img` scaled to fit `maxDim` and return a JPEG data URL + its dimensions. */
 function render(
   img: HTMLImageElement,

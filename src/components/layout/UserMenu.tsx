@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Route } from 'next';
@@ -8,9 +8,9 @@ import { trpc } from '@/lib/trpc/client';
 import { IconButton } from '@/components/ui/IconButton';
 import { UserIcon } from '@/components/icons';
 import { useRole } from '@/components/auth/useRole';
-import { cn } from '@/lib/cn';
-import { useLocale, useT } from '@/lib/i18n/LocaleProvider';
-import { LOCALES, LOCALE_LABELS } from '@/lib/i18n/config';
+import { useT } from '@/lib/i18n/LocaleProvider';
+import { useClickOutside } from '@/lib/useClickOutside';
+import { LocaleSwitcher } from './LocaleSwitcher';
 
 /** Account button → dropdown with the signed-in user, members link, and logout. */
 export function UserMenu() {
@@ -18,7 +18,6 @@ export function UserMenu() {
   const utils = trpc.useUtils();
   const { me, isOrgAdmin } = useRole();
   const t = useT();
-  const { locale, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -30,14 +29,7 @@ export function UserMenu() {
     },
   });
 
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClick);
-    return () => window.removeEventListener('mousedown', onClick);
-  }, [open]);
+  useClickOutside(ref, () => setOpen(false), open);
 
   const orgSlug = me?.org?.slug;
 
@@ -73,21 +65,7 @@ export function UserMenu() {
           <div className="h-px bg-hairline" />
           <div className="px-3 py-2">
             <p className="mb-1.5 text-xs text-muted">{t('account.language')}</p>
-            <div className="grid grid-cols-2 gap-1 rounded bg-panel p-0.5 hairline">
-              {LOCALES.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setLocale(l)}
-                  className={cn(
-                    'rounded px-2 py-1 text-xs transition-colors',
-                    locale === l ? 'bg-paper font-medium text-ink' : 'text-muted hover:text-ink',
-                  )}
-                >
-                  {LOCALE_LABELS[l]}
-                </button>
-              ))}
-            </div>
+            <LocaleSwitcher />
           </div>
           <div className="h-px bg-hairline" />
 

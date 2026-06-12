@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { ActionRow, Divider } from '@/components/ui/menu';
 import { ChevronDownIcon, ToolsIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useRole } from '@/components/auth/useRole';
 import { useAlign, type CalibrateTool } from '@/components/map/AlignContext';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useClickOutside } from '@/lib/useClickOutside';
 
 /**
  * Top-bar dropdown that opens the map alignment tools (one at a time):
@@ -21,14 +23,7 @@ export function MapToolsMenu() {
   const { tool, setTool } = useAlign();
   const t = useT();
 
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClick);
-    return () => window.removeEventListener('mousedown', onClick);
-  }, [open]);
+  useClickOutside(rootRef, () => setOpen(false), open);
 
   if (!can('editor')) return null;
 
@@ -54,46 +49,28 @@ export function MapToolsMenu() {
 
       {open ? (
         <div className="absolute right-0 z-30 mt-1.5 w-56 overflow-hidden rounded-lg bg-paper hairline shadow-floating">
-          <MenuButton active={tool === 'reference'} onClick={() => pick('reference')}>
-            {t('tools.reference')}
-          </MenuButton>
+          <ActionRow
+            active={tool === 'reference'}
+            onClick={() => pick('reference')}
+            label={t('tools.reference')}
+          />
           {can('admin') ? (
             <>
-              <div className="h-px bg-hairline" />
-              <MenuButton active={tool === 'sliders'} onClick={() => pick('sliders')}>
-                {t('tools.calibrate')}
-              </MenuButton>
-              <MenuButton active={tool === 'points'} onClick={() => pick('points')}>
-                {t('tools.alignDrag')}
-              </MenuButton>
+              <Divider />
+              <ActionRow
+                active={tool === 'sliders'}
+                onClick={() => pick('sliders')}
+                label={t('tools.calibrate')}
+              />
+              <ActionRow
+                active={tool === 'points'}
+                onClick={() => pick('points')}
+                label={t('tools.alignDrag')}
+              />
             </>
           ) : null}
         </div>
       ) : null}
     </div>
-  );
-}
-
-function MenuButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink transition-colors hover:bg-panel',
-        active && 'bg-panel font-medium',
-      )}
-    >
-      {children}
-      {active ? <span className="text-xs text-accent">on</span> : null}
-    </button>
   );
 }

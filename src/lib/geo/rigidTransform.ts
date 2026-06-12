@@ -21,7 +21,7 @@ export type RigidParams = {
   pivotLat: number;
 };
 
-const M_PER_DEG_LAT = 111_320;
+export const M_PER_DEG_LAT = 111_320;
 
 export function applyRigid(lng: number, lat: number, p: RigidParams): [number, number] {
   const mPerDegLng = M_PER_DEG_LAT * Math.cos((p.pivotLat * Math.PI) / 180);
@@ -59,6 +59,63 @@ export function metresBetween(
  * RigidParams about `pivot`. Needs ≥ 2 pairs. With exactly 2 it's exact; with
  * more it's least-squares. Feed it into applyRigid to move the rest of the set.
  */
+export type RobustFit = {
+  params: RigidParams;
+  /** Residual (metres) per input pair, by index, under the final params. */
+  residuals: number[];
+  /** Indices of the pairs that survived outlier rejection. */
+  inliers: Set<number>;
+  /** Median residual (metres) over the inliers. */
+  medianResidual: number;
+};
+
+/**
+ * solveSimilarity with iterative outlier rejection, so one badly placed pair
+ * doesn't skew the fit: solve, drop pairs whose residual exceeds
+ * max(3 × median, 2 m), and re-solve (≤ 6 rounds). Needs ≥ 2 pairs.
+ */
+export function solveRobustSimilarity(
+  from: Array<[number, number]>,
+  to: Array<[number, number]>,
+  pivotLng: number,
+  pivotLat: number,
+): RobustFit | null {
+  const n = from.length;
+  if (n < 2) return null;
+  const resid = (p: RigidParams, i: number) =>
+    metresBetween(applyRigid(from[i]![0], from[i]![1], p), to[i]!, pivotLat);
+  const solveFor = (idx: number[]) =>
+    solveSimilarity(
+      idx.map((i) => from[i]!),
+      idx.map((i) => to[i]!),
+      pivotLng,
+      pivotLat,
+    );
+
+  let idx = Array.from({ length: n }, (_, i) => i);
+  let params = solveFor(idx);
+  for (let it = 0; it < 6; it++) {
+    params = solveFor(idx);
+    const sorted = idx.map((i) => resid(params, i)).sort((a, b) => a - b);
+    const med = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    const keep = Array.from({ length: n }, (_, i) => i).filter(
+      (i) => resid(params, i) < Math.max(3 * med, 2),
+    );
+    if (keep.length === idx.length || keep.length < 2) break;
+    idx = keep;
+  }
+  params = solveFor(idx);
+
+  const residuals = Array.from({ length: n }, (_, i) => resid(params, i));
+  const inlierRes = idx.map((i) => residuals[i]!).sort((a, b) => a - b);
+  return {
+    params,
+    residuals,
+    inliers: new Set(idx),
+    medianResidual: inlierRes[Math.floor(inlierRes.length / 2)] ?? 0,
+  };
+}
+
 export function solveSimilarity(
   from: Array<[number, number]>,
   to: Array<[number, number]>,

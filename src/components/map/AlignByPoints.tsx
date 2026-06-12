@@ -1,29 +1,22 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Marker, type MapLayerMouseEvent, type GeoJSONSource } from 'maplibre-gl';
+import type { GeoJSONSource } from 'maplibre-gl';
 import { useMap } from './MapContext';
 import { useAlign } from './AlignContext';
-import { TREES_SOURCE, TREES_PIN_LAYER } from './treeLayer';
+import { TREES_SOURCE } from './treeLayer';
 import { trpc } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/Button';
 import { useRole } from '@/components/auth/useRole';
-import {
-  applyRigid,
-  solveSimilarity,
-  metresBetween,
-  type RigidParams,
-} from '@/lib/geo/rigidTransform';
-
-type CP = { cpId: number; treeId: string; from: [number, number]; to: [number, number] };
-
-const moved = (c: CP) => c.to[0] !== c.from[0] || c.to[1] !== c.from[1];
+import { applyRigid, solveRobustSimilarity } from '@/lib/geo/rigidTransform';
+import { useControlPoints, movedCp, type ControlPoint } from './useControlPoints';
 
 /**
  * Drag-to-align (admin). Click a pin you know, drag the red handle to its true
  * spot — that's one control point. With 2+ control points it fits a similarity
- * (translate+rotate+scale, robust to a bad drag) and previews it on every tree;
- * Save persists. The whole transform is the same applyRigid math as Save.
+ * (translate+rotate+scale, robust to a bad drag — solveRobustSimilarity) and
+ * previews it on every tree; Save persists. The whole transform is the same
+ * applyRigid math as Save.
  */
 export function AlignByPoints() {
   const { map } = useMap();
@@ -34,19 +27,25 @@ export function AlignByPoints() {
   const { data } = trpc.trees.list.useQuery();
 
   const [previewing, setPreviewing] = useState(false);
-  const [cps, setCps] = useState<CP[]>([]);
 
-  const markers = useRef<Map<number, Marker>>(new Map());
-  const counter = useRef(0);
-  const cpsRef = useRef<CP[]>([]);
-  const previewingRef = useRef(false);
   const baseRef = useRef(new Map<string, [number, number]>());
   useEffect(() => {
-    cpsRef.current = cps;
-  }, [cps]);
-  useEffect(() => {
-    previewingRef.current = previewing;
-  }, [previewing]);
+    const m = new Map<string, [number, number]>();
+    for (const f of data?.features ?? []) {
+      m.set(f.properties.id as string, [
+        f.geometry.coordinates[0] ?? 0,
+        f.geometry.coordinates[1] ?? 0,
+      ]);
+    }
+    baseRef.current = m;
+  }, [data]);
+
+  const { cps, removeCp, clearAll } = useControlPoints({
+    map,
+    active,
+    suppressed: previewing,
+    getBase: (id) => baseRef.current.get(id),
+  });
 
   const pivot = useMemo(() => {
     const feats = data?.features ?? [];
@@ -60,60 +59,21 @@ export function AlignByPoints() {
     return { lng: sx / feats.length, lat: sy / feats.length };
   }, [data]);
 
-  useEffect(() => {
-    const m = new Map<string, [number, number]>();
-    for (const f of data?.features ?? []) {
-      m.set(f.properties.id as string, [
-        f.geometry.coordinates[0] ?? 0,
-        f.geometry.coordinates[1] ?? 0,
-      ]);
-    }
-    baseRef.current = m;
-  }, [data]);
-
-  // Robust similarity fit from the moved control points.
+  // Robust similarity fit from the moved control points, keyed back to cpIds.
   const fit = useMemo(() => {
     if (!pivot) return null;
-    const pts = cps.filter(moved);
-    if (pts.length < 2) return null;
-    const resid = (p: RigidParams, c: CP) =>
-      metresBetween(applyRigid(c.from[0], c.from[1], p), c.to, pivot.lat);
-    let idx = pts.map((_, i) => i);
-    let params = solveSimilarity(
+    const pts = cps.filter(movedCp);
+    const result = solveRobustSimilarity(
       pts.map((c) => c.from),
       pts.map((c) => c.to),
       pivot.lng,
       pivot.lat,
     );
-    for (let it = 0; it < 6; it++) {
-      params = solveSimilarity(
-        idx.map((i) => pts[i]!.from),
-        idx.map((i) => pts[i]!.to),
-        pivot.lng,
-        pivot.lat,
-      );
-      const sorted = idx.map((i) => resid(params, pts[i]!)).sort((a, b) => a - b);
-      const med = sorted[Math.floor(sorted.length / 2)] ?? 0;
-      const keep = pts.map((_, i) => i).filter((i) => resid(params, pts[i]!) < Math.max(3 * med, 2));
-      if (keep.length === idx.length || keep.length < 2) break;
-      idx = keep;
-    }
-    params = solveSimilarity(
-      idx.map((i) => pts[i]!.from),
-      idx.map((i) => pts[i]!.to),
-      pivot.lng,
-      pivot.lat,
-    );
+    if (!result) return null;
     const residuals = new Map<number, number>();
-    for (const c of pts) residuals.set(c.cpId, resid(params, c));
-    const inlierIds = new Set(idx.map((i) => pts[i]!.cpId));
-    const resVals = idx.map((i) => residuals.get(pts[i]!.cpId) ?? 0).sort((a, b) => a - b);
-    return {
-      params,
-      residuals,
-      inlierIds,
-      medRes: resVals[Math.floor(resVals.length / 2)] ?? 0,
-    };
+    pts.forEach((c, i) => residuals.set(c.cpId, result.residuals[i] ?? 0));
+    const inlierIds = new Set(pts.filter((_, i) => result.inliers.has(i)).map((c) => c.cpId));
+    return { params: result.params, residuals, inlierIds, medRes: result.medianResidual };
   }, [cps, pivot]);
 
   // Preview: push transformed (or original) features into the trees source.
@@ -138,53 +98,6 @@ export function AlignByPoints() {
     }
   }, [map, data, active, previewing, fit]);
 
-  // While active: capture pin clicks to create control points (selection is
-  // suppressed because AlignContext.aligning is true → TreeSelectHandler stands down).
-  useEffect(() => {
-    if (!map || !active) return;
-    const onClick = (e: MapLayerMouseEvent) => {
-      if (previewingRef.current) return;
-      const id = (e.features?.[0]?.properties as { id?: string } | null)?.id;
-      if (!id || cpsRef.current.some((c) => c.treeId === id)) return;
-      const from = baseRef.current.get(id);
-      if (!from) return;
-      const cpId = ++counter.current;
-      const marker = new Marker({ draggable: true, color: '#e11d48' }).setLngLat(from).addTo(map);
-      marker.on('dragend', () => {
-        const ll = marker.getLngLat();
-        setCps((prev) => prev.map((c) => (c.cpId === cpId ? { ...c, to: [ll.lng, ll.lat] } : c)));
-      });
-      markers.current.set(cpId, marker);
-      setCps((prev) => [...prev, { cpId, treeId: id, from, to: [from[0], from[1]] }]);
-    };
-    const enter = () => {
-      if (!previewingRef.current) map.getCanvas().style.cursor = 'crosshair';
-    };
-    const leave = () => {
-      map.getCanvas().style.cursor = '';
-    };
-    map.on('click', TREES_PIN_LAYER, onClick);
-    map.on('mouseenter', TREES_PIN_LAYER, enter);
-    map.on('mouseleave', TREES_PIN_LAYER, leave);
-    return () => {
-      map.off('click', TREES_PIN_LAYER, onClick);
-      map.off('mouseenter', TREES_PIN_LAYER, enter);
-      map.off('mouseleave', TREES_PIN_LAYER, leave);
-      map.getCanvas().style.cursor = '';
-    };
-  }, [map, active]);
-
-  const clearAll = () => {
-    for (const m of markers.current.values()) m.remove();
-    markers.current.clear();
-    setCps([]);
-  };
-  const removeCp = (cpId: number) => {
-    markers.current.get(cpId)?.remove();
-    markers.current.delete(cpId);
-    setCps((prev) => prev.filter((c) => c.cpId !== cpId));
-  };
-
   const calibrate = trpc.trees.calibrate.useMutation({
     onSuccess: () => {
       utils.trees.list.invalidate();
@@ -196,7 +109,7 @@ export function AlignByPoints() {
 
   if (!can('admin') || tool !== 'points') return null;
 
-  const movedCount = cps.filter(moved).length;
+  const movedCount = cps.filter(movedCp).length;
 
   return (
     <div className="absolute bottom-4 left-4 z-30 w-80 rounded-lg bg-panel/95 p-3 text-ink shadow-floating hairline backdrop-blur-md">
@@ -213,31 +126,16 @@ export function AlignByPoints() {
 
       {cps.length > 0 && (
         <ul className="mb-2 max-h-40 space-y-1 overflow-auto text-xs">
-          {cps.map((c, i) => {
-            const r = fit?.residuals.get(c.cpId);
-            const out = !!fit && !fit.inlierIds.has(c.cpId);
-            return (
-              <li key={c.cpId} className="flex items-center justify-between gap-2">
-                <span className="truncate">
-                  #{i + 1}
-                  {!moved(c) ? <span className="text-muted"> — drag handle</span> : null}
-                  {r != null ? (
-                    <span className={out ? 'text-danger' : 'text-muted'}>
-                      {' '}
-                      · {r.toFixed(1)} m{out ? ' (ignored)' : ''}
-                    </span>
-                  ) : null}
-                </span>
-                <button
-                  onClick={() => removeCp(c.cpId)}
-                  className="shrink-0 text-muted hover:text-danger"
-                  aria-label="remove control point"
-                >
-                  ✕
-                </button>
-              </li>
-            );
-          })}
+          {cps.map((c, i) => (
+            <ControlPointRow
+              key={c.cpId}
+              cp={c}
+              index={i}
+              residual={fit?.residuals.get(c.cpId)}
+              outlier={!!fit && !fit.inlierIds.has(c.cpId)}
+              onRemove={() => removeCp(c.cpId)}
+            />
+          ))}
         </ul>
       )}
 
@@ -287,5 +185,42 @@ export function AlignByPoints() {
         <p className="mt-2 text-xs text-danger">Save failed: {calibrate.error.message}</p>
       ) : null}
     </div>
+  );
+}
+
+/** One row in the control-point list: status, residual, and a remove button. */
+function ControlPointRow({
+  cp,
+  index,
+  residual,
+  outlier,
+  onRemove,
+}: {
+  cp: ControlPoint;
+  index: number;
+  residual: number | undefined;
+  outlier: boolean;
+  onRemove: () => void;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-2">
+      <span className="truncate">
+        #{index + 1}
+        {!movedCp(cp) ? <span className="text-muted"> — drag handle</span> : null}
+        {residual != null ? (
+          <span className={outlier ? 'text-danger' : 'text-muted'}>
+            {' '}
+            · {residual.toFixed(1)} m{outlier ? ' (ignored)' : ''}
+          </span>
+        ) : null}
+      </span>
+      <button
+        onClick={onRemove}
+        className="shrink-0 text-muted hover:text-danger"
+        aria-label="remove control point"
+      >
+        ✕
+      </button>
+    </li>
   );
 }

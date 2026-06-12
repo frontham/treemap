@@ -9,6 +9,7 @@ import { useSearch } from './SearchContext';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import { cn } from '@/lib/cn';
+import { useClickOutside } from '@/lib/useClickOutside';
 
 type Match = {
   id: string;
@@ -91,14 +92,7 @@ export function TreeSearch() {
   }, [selectedId]);
 
   // Close the dropdown when clicking outside the search.
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onDown);
-    return () => window.removeEventListener('mousedown', onDown);
-  }, [open]);
+  useClickOutside(ref, () => setOpen(false), open);
 
   const pick = (m: Match) => {
     select(m.id);
