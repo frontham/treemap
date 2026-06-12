@@ -8,6 +8,7 @@ import { TREES_SOURCE } from './treeLayer';
 import { trpc } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/Button';
 import { useRole } from '@/components/auth/useRole';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import { applyRigid, solveRobustSimilarity } from '@/lib/geo/rigidTransform';
 import { useControlPoints, movedCp, type ControlPoint } from './useControlPoints';
 
@@ -19,6 +20,7 @@ import { useControlPoints, movedCp, type ControlPoint } from './useControlPoints
  * applyRigid math as Save.
  */
 export function AlignByPoints() {
+  const t = useT();
   const { map } = useMap();
   const { can } = useRole();
   const { tool, setTool } = useAlign();
@@ -114,15 +116,12 @@ export function AlignByPoints() {
   return (
     <div className="absolute bottom-4 left-4 z-30 w-80 rounded-lg bg-panel/95 p-3 text-ink shadow-floating hairline backdrop-blur-md">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-sm font-medium">Align by points</span>
+        <span className="text-sm font-medium">{t('align.title')}</span>
         <span className="text-xs text-muted">
-          {movedCount}/{cps.length} moved
+          {t('align.movedCount', { moved: movedCount, total: cps.length })}
         </span>
       </div>
-      <p className="mb-2 text-xs text-muted">
-        Click a pin you recognise, then drag its red handle to the correct spot. Do 3+ spread across
-        the map, then Preview &amp; Save.
-      </p>
+      <p className="mb-2 text-xs text-muted">{t('align.hint')}</p>
 
       {cps.length > 0 && (
         <ul className="mb-2 max-h-40 space-y-1 overflow-auto text-xs">
@@ -141,11 +140,15 @@ export function AlignByPoints() {
 
       {fit ? (
         <p className="mb-2 text-xs text-muted">
-          Fit: {((fit.params.scale - 1) * 100).toFixed(1)}% scale, {fit.params.angleDeg.toFixed(1)}°
-          rot · median {fit.medRes.toFixed(1)} m ({fit.inlierIds.size} pts)
+          {t('align.fitSummary', {
+            scale: ((fit.params.scale - 1) * 100).toFixed(1),
+            deg: fit.params.angleDeg.toFixed(1),
+            median: fit.medRes.toFixed(1),
+            count: fit.inlierIds.size,
+          })}
         </p>
       ) : (
-        <p className="mb-2 text-xs text-muted">Move at least 2 pins to compute a fit.</p>
+        <p className="mb-2 text-xs text-muted">{t('align.needTwo')}</p>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -155,17 +158,17 @@ export function AlignByPoints() {
           disabled={!fit}
           onClick={() => setPreviewing((p) => !p)}
         >
-          {previewing ? 'Previewing' : 'Preview'}
+          {previewing ? t('align.previewing') : t('align.preview')}
         </Button>
         <Button
           size="sm"
           disabled={!fit || calibrate.isPending}
           onClick={() => fit && calibrate.mutate(fit.params)}
         >
-          {calibrate.isPending ? 'Saving…' : 'Save'}
+          {calibrate.isPending ? t('common.saving') : t('common.save')}
         </Button>
         <Button size="sm" variant="ghost" disabled={cps.length === 0 || calibrate.isPending} onClick={clearAll}>
-          Clear
+          {t('align.clear')}
         </Button>
         <Button
           size="sm"
@@ -178,11 +181,13 @@ export function AlignByPoints() {
             setTool('none');
           }}
         >
-          Close
+          {t('common.close')}
         </Button>
       </div>
       {calibrate.isError ? (
-        <p className="mt-2 text-xs text-danger">Save failed: {calibrate.error.message}</p>
+        <p className="mt-2 text-xs text-danger">
+          {t('common.saveFailed', { message: calibrate.error.message })}
+        </p>
       ) : null}
     </div>
   );
@@ -202,22 +207,23 @@ function ControlPointRow({
   outlier: boolean;
   onRemove: () => void;
 }) {
+  const t = useT();
   return (
     <li className="flex items-center justify-between gap-2">
       <span className="truncate">
         #{index + 1}
-        {!movedCp(cp) ? <span className="text-muted"> — drag handle</span> : null}
+        {!movedCp(cp) ? <span className="text-muted"> — {t('align.dragHandle')}</span> : null}
         {residual != null ? (
           <span className={outlier ? 'text-danger' : 'text-muted'}>
             {' '}
-            · {residual.toFixed(1)} m{outlier ? ' (ignored)' : ''}
+            · {residual.toFixed(1)} m{outlier ? ` (${t('align.ignored')})` : ''}
           </span>
         ) : null}
       </span>
       <button
         onClick={onRemove}
         className="shrink-0 text-muted hover:text-danger"
-        aria-label="remove control point"
+        aria-label={t('align.removePoint')}
       >
         ✕
       </button>

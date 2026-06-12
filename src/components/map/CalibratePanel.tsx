@@ -8,6 +8,7 @@ import { trpc } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/Button';
 import { useRole } from '@/components/auth/useRole';
 import { useAlign } from './AlignContext';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import { applyRigid, isIdentity } from '@/lib/geo/rigidTransform';
 
 /**
@@ -17,6 +18,7 @@ import { applyRigid, isIdentity } from '@/lib/geo/rigidTransform';
  * tree-set centroid; the same math runs on the server so Save == preview.
  */
 export function CalibratePanel() {
+  const t = useT();
   const { map } = useMap();
   const { can } = useRole();
   const utils = trpc.useUtils();
@@ -96,12 +98,14 @@ export function CalibratePanel() {
   return (
     <div className="absolute bottom-4 left-4 z-30 w-72 rounded-lg bg-panel/95 p-3 text-ink shadow-floating hairline backdrop-blur-md">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium">Calibrate trees</span>
-        <span className="text-xs text-muted">{data?.features.length ?? 0} pins</span>
+        <span className="text-sm font-medium">{t('calib.title')}</span>
+        <span className="text-xs text-muted">
+          {t('calib.pinCount', { count: data?.features.length ?? 0 })}
+        </span>
       </div>
 
       <AxisControl
-        label="East ← → West"
+        label={t('calib.eastWest')}
         value={dx}
         unit="m"
         min={-100}
@@ -111,7 +115,7 @@ export function CalibratePanel() {
         onChange={setDx}
       />
       <AxisControl
-        label="North ↑ ↓ South"
+        label={t('calib.northSouth')}
         value={dy}
         unit="m"
         min={-100}
@@ -121,7 +125,7 @@ export function CalibratePanel() {
         onChange={setDy}
       />
       <AxisControl
-        label="Rotate ↺ ↻"
+        label={t('calib.rotate')}
         value={deg}
         unit="°"
         min={-20}
@@ -131,7 +135,7 @@ export function CalibratePanel() {
         onChange={setDeg}
       />
       <AxisControl
-        label="Zoom (scale)"
+        label={t('calib.scale')}
         value={scalePct}
         unit="%"
         min={-15}
@@ -143,21 +147,21 @@ export function CalibratePanel() {
 
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" onClick={save} disabled={calibrate.isPending || isIdentity({ dx, dy, angleDeg: deg, scale })}>
-          {calibrate.isPending ? 'Saving…' : 'Save'}
+          {calibrate.isPending ? t('common.saving') : t('common.save')}
         </Button>
         <Button size="sm" variant="ghost" onClick={reset} disabled={calibrate.isPending}>
-          Reset
+          {t('calib.reset')}
         </Button>
         <Button size="sm" variant="secondary" onClick={cancel} disabled={calibrate.isPending} className="ml-auto">
-          Close
+          {t('common.close')}
         </Button>
       </div>
       {calibrate.isError ? (
-        <p className="mt-2 text-xs text-danger">Save failed: {calibrate.error.message}</p>
+        <p className="mt-2 text-xs text-danger">
+          {t('common.saveFailed', { message: calibrate.error.message })}
+        </p>
       ) : null}
-      <p className="mt-2 text-xs text-muted">
-        Drag to align the pins to the basemap, then Save. Rotation is about the set&apos;s centre. Reversible.
-      </p>
+      <p className="mt-2 text-xs text-muted">{t('calib.hint')}</p>
     </div>
   );
 }
@@ -181,6 +185,7 @@ function AxisControl({
   nudge: number;
   onChange: (v: number) => void;
 }) {
+  const t = useT();
   const clamp = (v: number) => Math.min(max, Math.max(min, Math.round(v / step) * step));
   return (
     <div className="mb-2">
@@ -196,7 +201,7 @@ function AxisControl({
           type="button"
           className="h-6 w-6 shrink-0 rounded hairline text-ink hover:bg-paper"
           onClick={() => onChange(clamp(value - nudge))}
-          aria-label={`decrease ${label}`}
+          aria-label={t('calib.decrease', { label })}
         >
           −
         </button>
@@ -213,7 +218,7 @@ function AxisControl({
           type="button"
           className="h-6 w-6 shrink-0 rounded hairline text-ink hover:bg-paper"
           onClick={() => onChange(clamp(value + nudge))}
-          aria-label={`increase ${label}`}
+          aria-label={t('calib.increase', { label })}
         >
           +
         </button>
