@@ -27,6 +27,7 @@ import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import { useClickOutside } from '@/lib/useClickOutside';
 import { LocaleSwitcher } from './LocaleSwitcher';
+import { BuildInfo } from './BuildInfo';
 import { LayersView } from './mobileMenu/LayersView';
 
 /**
@@ -194,6 +195,7 @@ export function MobileMenu() {
                   label={logout.isPending ? t('account.signingout') : t('account.signout')}
                   onClick={() => logout.mutate()}
                 />
+                <BuildInfo className="border-t border-hairline px-3 py-1.5" />
               </>
             )}
           </div>

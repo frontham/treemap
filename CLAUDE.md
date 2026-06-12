@@ -12,6 +12,7 @@ Multi-tenant hierarchy: **organization → projects → trees** (also overlays, 
 - Migrations are **hand-written numbered SQL** in `migrations/`, applied by `npm run db:migrate` (custom runner with a `_migrations` ledger — NOT drizzle-kit). The Drizzle schema in `src/server/db/schema/` is kept in sync **by hand**.
 - `npm run db:seed` seeds the demo org/users (`src/server/auth/demo.ts`): `demo@example.com` / `demo1234` (owner), `viewer@example.com` / `viewer1234` (org viewer; editor on Oegstgeest, viewer on Demo Trees).
 - `npm run typecheck` before finishing changes.
+- **Bump `package.json` version (semver) with every user-facing PR** — minor for features, patch for fixes. It's baked into the UI at build time (BuildInfo: version · commit · build date) so deployments are identifiable.
 
 ## Code style & component architecture
 Established in the component-decomposition refactor (PR #14–#16) — keep new code in this shape:
