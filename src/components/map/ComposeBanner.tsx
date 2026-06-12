@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCompose } from './ComposeContext';
 import { useMap } from './MapContext';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
 
 /**
  * Instruction banner shown while in 'placing' mode. Offers both ways to set the
@@ -13,6 +14,7 @@ export function ComposeBanner() {
   const { mode, setDraft } = useCompose();
   const { map } = useMap();
   const t = useT();
+  const toast = useToast();
   const [locating, setLocating] = useState(false);
 
   if (mode !== 'placing') return null;
@@ -31,7 +33,7 @@ export function ComposeBanner() {
       (err) => {
         // eslint-disable-next-line no-console
         console.error('[add-at-location]', err);
-        window.alert("Couldn't get your location. Check location permissions and try again.");
+        toast.error(t('compose.locationFailed'));
         setLocating(false);
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 },

@@ -6,6 +6,8 @@ import { IconButton } from '@/components/ui/IconButton';
 import { PlusIcon, EditIcon, TrashIcon } from '@/components/icons';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 import { useDateFormatter } from '@/lib/i18n/useDateFormatter';
 import { formatFieldValue, nonEmptyFieldEntries } from '@/lib/fieldValues';
 import type { TreeView } from './TreeView';
@@ -45,6 +47,8 @@ function InspectionDetails({
 /** Inspections tab: dated assessment log + create / edit / delete. */
 export function TreeInspections({ treeId, tree, canEdit }: Props) {
   const t = useT();
+  const toast = useToast();
+  const { confirm } = useDialog();
   const fmtDate = useDateFormatter('short');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<InspectionView | null>(null);
@@ -68,7 +72,7 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
       refresh();
       setCreating(false);
     },
-    onError: (e) => window.alert(`Couldn't save inspection: ${e.message}`),
+    onError: (e) => toast.error(t('insp.saveFailed', { message: e.message })),
   });
 
   const update = trpc.inspections.update.useMutation({
@@ -76,12 +80,12 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
       refresh();
       setEditing(null);
     },
-    onError: (e) => window.alert(`Couldn't save inspection: ${e.message}`),
+    onError: (e) => toast.error(t('insp.saveFailed', { message: e.message })),
   });
 
   const remove = trpc.inspections.delete.useMutation({
     onSuccess: refresh,
-    onError: (e) => window.alert(`Couldn't delete inspection: ${e.message}`),
+    onError: (e) => toast.error(t('insp.deleteFailed', { message: e.message })),
   });
 
   if (editing) {
@@ -109,8 +113,13 @@ export function TreeInspections({ treeId, tree, canEdit }: Props) {
     );
   }
 
-  const onDelete = (id: string) => {
-    if (window.confirm(t('insp.confirmDelete'))) remove.mutate({ id });
+  const onDelete = async (id: string) => {
+    const ok = await confirm({
+      message: t('insp.confirmDelete'),
+      confirmLabel: t('common.delete'),
+      danger: true,
+    });
+    if (ok) remove.mutate({ id });
   };
 
   return (

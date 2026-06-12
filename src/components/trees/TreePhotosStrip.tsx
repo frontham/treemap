@@ -6,6 +6,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 import type { TreePhotoView } from './TreeView';
 import { PhotoThumb } from './PhotoThumb';
 import { PhotoLightbox } from './PhotoLightbox';
@@ -45,17 +47,24 @@ export function TreePhotosStrip({
   title,
 }: Props) {
   const t = useT();
+  const toast = useToast();
+  const { confirm } = useDialog();
   const fileRef = useRef<HTMLInputElement>(null);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
 
   const { busy, uploadFiles } = usePhotoUpload({ treeId, inspectionId, onChanged });
   const deletePhoto = trpc.trees.deletePhoto.useMutation({
     onSuccess: onChanged,
-    onError: (e) => window.alert(`${t('photos.uploadFailed')}: ${e.message}`),
+    onError: (e) => toast.error(t('photos.deleteFailed', { message: e.message })),
   });
 
-  function onDelete(id: string) {
-    if (window.confirm(t('photos.deleteConfirm'))) deletePhoto.mutate({ id });
+  async function onDelete(id: string) {
+    const ok = await confirm({
+      message: t('photos.deleteConfirm'),
+      confirmLabel: t('common.delete'),
+      danger: true,
+    });
+    if (ok) deletePhoto.mutate({ id });
   }
 
   // In compact mode (inspection cards), stay invisible when there's nothing to

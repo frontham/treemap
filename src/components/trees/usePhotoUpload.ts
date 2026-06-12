@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc/client';
 import { processImage } from '@/lib/image/processImage';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
 
 type Args = {
   treeId: string;
@@ -19,6 +20,7 @@ type Args = {
  */
 export function usePhotoUpload({ treeId, inspectionId, onChanged }: Args) {
   const t = useT();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const addPhoto = trpc.trees.addPhoto.useMutation();
 
@@ -42,7 +44,7 @@ export function usePhotoUpload({ treeId, inspectionId, onChanged }: Args) {
       }
       onChanged();
     } catch (e) {
-      window.alert(`${t('photos.uploadFailed')}: ${e instanceof Error ? e.message : ''}`);
+      toast.error(`${t('photos.uploadFailed')}: ${e instanceof Error ? e.message : ''}`);
     } finally {
       setBusy(false);
     }

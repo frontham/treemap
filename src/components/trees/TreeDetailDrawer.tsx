@@ -9,6 +9,7 @@ import { useTreeMove } from '@/components/map/TreeMoveContext';
 import { trpc } from '@/lib/trpc/client';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useDialog } from '@/components/ui/dialog/DialogProvider';
 import { TreeForm } from '@/components/forms/TreeForm';
 import type { TreeFormValues } from '@/components/forms/parseTreeFormData';
 import { ChevronDownIcon } from '@/components/icons';
@@ -35,6 +36,7 @@ export function TreeDetailDrawer() {
   const [showLog, setShowLog] = useState(false);
   const { can } = useRole();
   const t = useT();
+  const { confirm } = useDialog();
   const canEdit = can('editor');
   const isMoving = !!selectedId && move.movingId === selectedId;
 
@@ -88,9 +90,13 @@ export function TreeDetailDrawer() {
     await updateTree.mutateAsync({ id: selectedId, ...values });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!selectedId || !tree) return;
-    const ok = window.confirm(`Delete "${tree.commonName}"? This can be restored from history.`);
+    const ok = await confirm({
+      message: t('tree.deleteConfirm', { name: tree.commonName }),
+      confirmLabel: t('common.delete'),
+      danger: true,
+    });
     if (ok) deleteTree.mutate({ id: selectedId });
   }
 

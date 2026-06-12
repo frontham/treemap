@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { OfflineProvider } from '@/components/providers/OfflineProvider';
+import { ToastProvider } from '@/components/ui/toast/ToastProvider';
+import { DialogProvider } from '@/components/ui/dialog/DialogProvider';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config';
 import '@/styles/globals.css';
@@ -34,7 +36,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <QueryProvider>
           <OfflineProvider>
-            <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+            <LocaleProvider initialLocale={locale}>
+              <ToastProvider>
+                <DialogProvider>{children}</DialogProvider>
+              </ToastProvider>
+            </LocaleProvider>
           </OfflineProvider>
         </QueryProvider>
       </body>

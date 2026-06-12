@@ -7,6 +7,7 @@ import { LocateIcon } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useMap } from './MapContext';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
 
 /** A simple blue "you are here" dot. */
 function markerEl(): HTMLDivElement {
@@ -26,6 +27,7 @@ function markerEl(): HTMLDivElement {
 export function UserLocationButton({ onActivate }: { onActivate?: () => void }) {
   const { map } = useMap();
   const t = useT();
+  const toast = useToast();
   const posRef = useRef<{ lng: number; lat: number } | null>(null);
   const followingRef = useRef(false);
   const [following, setFollowing] = useState(false);
@@ -100,7 +102,7 @@ export function UserLocationButton({ onActivate }: { onActivate?: () => void }) 
     if (!map) return;
     const pos = posRef.current;
     if (!pos) {
-      window.alert(t('controls.locationUnavailable'));
+      toast.error(t('controls.locationUnavailable'));
       return;
     }
     followingRef.current = true;

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { inputBase } from '@/components/forms/fields/FieldShell';
 import { trpc } from '@/lib/trpc/client';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { useToast } from '@/components/ui/toast/ToastProvider';
 import { cn } from '@/lib/cn';
 import type { ImportTransform } from '@/server/db/schema/projects';
 
@@ -54,6 +55,7 @@ function guessCoord(columns: string[], wanted: string[]): string {
 /** Maps a source file's columns onto tree fields, then imports. */
 export function ImportMappingDialog({ source, onClose }: { source: ImportSource; onClose: () => void }) {
   const t = useT();
+  const toast = useToast();
   const utils = trpc.useUtils();
   const { data: saved } = trpc.imports.mapping.useQuery();
 
@@ -85,10 +87,10 @@ export function ImportMappingDialog({ source, onClose }: { source: ImportSource;
   const run = trpc.imports.run.useMutation({
     onSuccess: (r) => {
       utils.trees.list.invalidate();
-      window.alert(`Imported ${r.imported} tree${r.imported === 1 ? '' : 's'}, skipped ${r.skipped}.`);
+      toast.success(t('import.done', { imported: r.imported, skipped: r.skipped }));
       onClose();
     },
-    onError: (e) => window.alert(`Import failed: ${e.message}`),
+    onError: (e) => toast.error(t('import.failed', { message: e.message })),
   });
 
   const tableColumns = source.columns.filter((c) => !isCsv || (c !== lngColumn && c !== latColumn));
