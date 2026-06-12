@@ -18,13 +18,14 @@ export async function withOrgContext<T>(
   fn: (tx: Tx) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.current_org_id', ${ctx.orgId}, true)`);
-    await tx.execute(sql`SELECT set_config('app.current_user_id', ${ctx.userId}, true)`);
-    if (ctx.projectId) {
-      await tx.execute(
-        sql`SELECT set_config('app.current_project_id', ${ctx.projectId}, true)`,
-      );
-    }
+    // All three GUCs in one statement — one network round-trip instead of three
+    // (the DB is remote, so each statement costs real latency). The current_*_id()
+    // SQL functions NULLIF on '', so an absent project sets '' ≡ NULL.
+    await tx.execute(sql`
+      SELECT set_config('app.current_org_id', ${ctx.orgId}, true),
+             set_config('app.current_user_id', ${ctx.userId}, true),
+             set_config('app.current_project_id', ${ctx.projectId ?? ''}, true)
+    `);
     return fn(tx);
   });
 }

@@ -14,6 +14,38 @@ export type ResolvedContext = {
 type OrgRow = { id: string; slug: string; role: Role };
 type ProjRow = { id: string; slug: string; role: Role };
 
+type Membership = Pick<ResolvedContext, 'org' | 'project'>;
+
+/**
+ * Short-lived per-instance cache of the org/project membership resolution.
+ * The session check itself is NOT cached (logout stays immediate); only the
+ * membership/role lookup is, so a role change or project rename can take up
+ * to TTL to propagate — acceptable, and on serverless each warm instance has
+ * its own cache anyway. Saves a transaction + three queries per request.
+ */
+const membershipCache = new Map<string, { value: Membership; expires: number }>();
+const MEMBERSHIP_TTL_MS = 60_000;
+const MEMBERSHIP_CACHE_MAX = 1_000;
+
+function cacheGet(key: string): Membership | null {
+  const entry = membershipCache.get(key);
+  if (!entry) return null;
+  if (entry.expires < Date.now()) {
+    membershipCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function cacheSet(key: string, value: Membership) {
+  if (membershipCache.size >= MEMBERSHIP_CACHE_MAX) {
+    // Drop the oldest entry (insertion order) to stay bounded.
+    const oldest = membershipCache.keys().next().value;
+    if (oldest !== undefined) membershipCache.delete(oldest);
+  }
+  membershipCache.set(key, { value, expires: Date.now() + MEMBERSHIP_TTL_MS });
+}
+
 /**
  * Resolves the acting user + active org + active project (with effective role)
  * from the request cookies. The active org/project are chosen by the SLUG
@@ -32,8 +64,23 @@ export async function resolveRequestContext(
   const orgSlug = cookies[ORG_COOKIE] ?? null;
   const projectSlug = cookies[PROJECT_COOKIE] ?? null;
 
+  const cacheKey = `${user.id}|${orgSlug ?? ''}|${projectSlug ?? ''}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return { user, ...cached };
+
+  const membership = await resolveMembership(user.id, orgSlug, projectSlug);
+  cacheSet(cacheKey, membership);
+  return { user, ...membership };
+}
+
+/** The uncached org/project lookup (runs under RLS, hence the GUC transaction). */
+async function resolveMembership(
+  userId: string,
+  orgSlug: string | null,
+  projectSlug: string | null,
+): Promise<Membership> {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`);
+    await tx.execute(sql`SELECT set_config('app.current_user_id', ${userId}, true)`);
 
     const orgRes = await tx.execute(sql`
       SELECT o.id, o.slug, m.role
@@ -43,7 +90,7 @@ export async function resolveRequestContext(
       LIMIT 1
     `);
     const org = orgRes.rows[0] as OrgRow | undefined;
-    if (!org) return { user, org: null, project: null };
+    if (!org) return { org: null, project: null };
 
     await tx.execute(sql`SELECT set_config('app.current_org_id', ${org.id}, true)`);
 
@@ -60,7 +107,6 @@ export async function resolveRequestContext(
     const project = (projRes.rows[0] as ProjRow | undefined) ?? null;
 
     return {
-      user,
       org: { id: org.id, slug: org.slug, role: org.role },
       project,
     };

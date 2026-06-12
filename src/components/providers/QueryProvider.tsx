@@ -12,7 +12,20 @@ import { GlobalActivityBar } from './GlobalActivityBar';
  * Both are created lazily so that during SSR every request gets its own pair.
  */
 export function QueryProvider({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // Data on this app changes through this app — a freshly fetched
+            // query doesn't need to refire when a drawer remounts or the tab
+            // regains focus. Mutations invalidate what they touch.
+            staleTime: 30_000,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
